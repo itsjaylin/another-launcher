@@ -14,6 +14,14 @@ It brings together a spacious home screen, a floating dock, frosted glass contro
 
 Requires **Android 12 or newer**. The app is no longer on Google Play.
 
+## Download
+
+[Download the APK](https://github.com/itsjaylin/another-launcher/releases/latest/download/Another-Launcher.apk) · [Release notes](https://github.com/itsjaylin/another-launcher/releases/latest)
+
+Open the APK on your phone and allow installation from your browser when Android asks. Then choose Another Launcher as your default home app.
+
+Back up your layout before switching from an existing installation. If Android reports a signing conflict, keep the installed app until you have exported your backup.
+
 ## Build it
 
 Open the project in Android Studio, install Android SDK 37, and let Gradle sync. Run the `app` configuration on your device, or build a debug APK:
