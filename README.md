@@ -36,6 +36,7 @@ If you're switching from the Play version, export your layout backup first. A bu
 
 ## Credits
 
+- [McCal-Codes — Folio](https://github.com/McCal-Codes/folio): an early reference for the launcher’s development, foldable home screen, and iPhone-style design
 - [jakesgoodapps — DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher): foldable layouts and widget sizing
 - [Berkay Catak — adaptive_platform_ui](https://github.com/berkaycatak/adaptive_platform_ui): liquid glass styling
 
