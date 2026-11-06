@@ -1,6 +1,21 @@
 # Another Launcher
 
-A standalone Android home launcher built around wide foldables: shared-grid home pages, a floating favorites rail, a compact circular status module, and a live-content unfold effect. **Current source: 0.7.0-beta.5 (version code 12). Now open source under the [MIT License](LICENSE). The app is no longer distributed through Google Play.**
+An Android home launcher inspired by the **iPhone Duo homescreen launcher**, bringing its foldable homescreen aesthetic to Android with added features and customization. Shared-grid home pages, a floating favorites rail, a circular status module, and a live-content unfold effect form the core experience.
+
+## Inspiration and added features
+
+The iPhone Duo homescreen launcher is the main visual inspiration: a spacious layout for foldables, translucent controls, and a distinctive dock and status display. Another Launcher develops that direction with its own Android implementation and features:
+
+- **Native Android widgets:** add, resize, and stack live widgets on your home pages.
+- **Dedicated widget Hub:** a separate page for weather and your chosen widgets.
+- **Searchable App Library:** find installed apps, calculate results, open Settings shortcuts, search optional contacts, or send a query to your chosen web search provider.
+- **Flexible home layouts:** manage and reorder pages, choose a default home, organize folders, and adjust dock placement.
+- **Personalization:** frosted glass surfaces, status colors, optional app labels, and notification dots.
+- **Backup and restore:** export your layout and settings to JSON.
+
+See [the reference study](docs/REFERENCES.md) for the open-source projects and design references that also informed development.
+
+**Current source: 0.7.0-beta.5 (version code 12). Open source under the [MIT License](LICENSE). The app is no longer distributed through Google Play.**
 
 **Target:** Android 17 / API 37. **Minimum:** Android 12 / API 31. Geometry comes from the device's actual window and folding feature; there are no hardcoded Fold 8 resolutions.
 
