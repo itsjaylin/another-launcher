@@ -36,19 +36,10 @@ If you're switching from the Play version, export your layout backup first. A bu
 
 ## Credits
 
-Thanks to the creators whose work helped shape this project:
-
 - [jakesgoodapps — DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher): foldable layouts and widget sizing
 - [Berkay Catak — adaptive_platform_ui](https://github.com/berkaycatak/adaptive_platform_ui): liquid glass styling
-- [McCal-Codes — Folio](https://github.com/McCal-Codes/folio): Duo/iOS-inspired design
-- [Vyom-2007 — DuoFoldWallpaper](https://github.com/Vyom-2007/DuoFoldWallpaper): fold animation references
-- [narayann7 — duo_animation](https://github.com/narayann7/duo_animation) and [duo_animation_playground](https://github.com/narayann7/duo_animation_playground): animation and motion references
-- [JavSaia — AndroidDuo](https://github.com/JavSaia/AndroidDuo): live UI transition references
-- [marcoazeem — duo-open](https://github.com/marcoazeem/duo-open): hinge sensing and motion smoothing
-- [sAleksovski — react-native-android-widget](https://github.com/sAleksovski/react-native-android-widget): widget behavior references
-- [Lawnchair contributors](https://github.com/LawnchairLauncher/lawnchair): launcher behavior references; no Lawnchair code is bundled
 
-More detail is in the [reference notes](docs/REFERENCES.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+See [third-party notices](THIRD_PARTY_NOTICES.md) for their license notices.
 
 ## AI-assisted development
 
