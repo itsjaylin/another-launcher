@@ -13,6 +13,10 @@ The iPhone Duo homescreen launcher is the main visual inspiration: a spacious la
 - **Personalization:** frosted glass surfaces, status colors, optional app labels, and notification dots.
 - **Backup and restore:** export your layout and settings to JSON.
 
+## AI-assisted development
+
+Another Launcher was coded with AI assistance. Development started with Fable and continued with help from Astra in Codex.
+
 ## Credits and acknowledgments
 
 Another Launcher draws on the work of these creators and projects. Credit goes to them for the ideas, examples, and techniques that helped shape it:
