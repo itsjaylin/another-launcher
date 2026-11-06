@@ -1,38 +1,36 @@
 # Another Launcher
 
-An Android launcher inspired by the **iPhone Duo homescreen launcher**, with added features for foldable phones.
+An Android launcher inspired by the **iPhone Duo homescreen launcher**, with a few added features for foldable phones. A floating dock, frosted glass, and a home screen that moves as you unfold it.
 
-It brings together a spacious home screen, a floating dock, frosted glass controls, and an animated unfold effect.
+It's off Google Play and now open source. Download it, customize it, and see how it feels.
 
-## Features
+## Download it
 
-- Native Android widgets, resizing, and widget stacks
-- A dedicated page for weather and widgets
-- An App Library with app search, calculator results, and web search
-- Custom pages, folders, dock placement, and colors
-- Layout backup and restore
+[Get the APK↗](https://github.com/itsjaylin/another-launcher/releases/latest/download/Another-Launcher.apk) · [Release notes↗](https://github.com/itsjaylin/another-launcher/releases/latest)
 
-Requires **Android 12 or newer**. The app is no longer on Google Play.
+1. Download the APK on your phone. Requires **Android 12 or newer**.
+2. Open it. Android will ask you to allow installs from your browser.
+3. Choose Another Launcher as your default home app. Make it yours.
 
-## Download
+Already using it? Export your layout backup first. If Android says the signatures don't match, keep your existing app until your backup is saved.
 
-[Download the APK](https://github.com/itsjaylin/another-launcher/releases/latest/download/Another-Launcher.apk) · [Release notes](https://github.com/itsjaylin/another-launcher/releases/latest)
+## What's in it
 
-Open the APK on your phone and allow installation from your browser when Android asks. Then choose Another Launcher as your default home app.
+- Native Android widgets. Resize them, stack them, move them around.
+- A separate page for weather and widgets.
+- An App Library with app search, a calculator, and web search.
+- Custom pages, folders, dock placement, and colors.
+- Backup and restore for your layout.
 
-Back up your layout before switching from an existing installation. If Android reports a signing conflict, keep the installed app until you have exported your backup.
+## Build it yourself
 
-## Build it
-
-Open the project in Android Studio, install Android SDK 37, and let Gradle sync. Run the `app` configuration on your device, or build a debug APK:
+Open the project in Android Studio, install Android SDK 37, and let Gradle sync. Run the `app` configuration, or build an APK:
 
 ```sh
 ./gradlew :app:assembleDebug
 ```
 
-The APK will be in `app/build/outputs/apk/debug/`. You don't need the original signing keys to build it.
-
-If you're switching from the Play version, export your layout backup first. A build signed with a different key can't update the existing installation.
+You'll find it in `app/build/outputs/apk/debug/`. No original signing keys needed. A build signed with a different key can't update the Play version.
 
 ## Credits
 
@@ -40,18 +38,18 @@ If you're switching from the Play version, export your layout backup first. A bu
 - [jakesgoodapps — DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher): foldable layouts and widget sizing
 - [Berkay Catak — adaptive_platform_ui](https://github.com/berkaycatak/adaptive_platform_ui): liquid glass styling
 
-See [third-party notices](THIRD_PARTY_NOTICES.md) for their license notices.
+License notices are [here](THIRD_PARTY_NOTICES.md).
 
 ## AI-assisted development
 
-Development started with Fable and continued with help from Astra in Codex.
+This started with Fable. Astra in Codex helped code it from there.
 
-## Contributing
+## Found a bug?
 
-Bug reports and pull requests are welcome. For bugs, include your device, Android version, and steps to reproduce the problem.
+Open an issue with your phone model, Android version, and what happened. Steps to reproduce help. Pull requests are welcome too.
 
-See the [development guidelines](AGENTS.md), [testing notes](docs/TESTING.md), and [roadmap](ROADMAP.md) for technical details.
+For the technical stuff: [development guidelines](AGENTS.md), [testing notes](docs/TESTING.md), and [roadmap](ROADMAP.md).
 
 ## License
 
-[MIT](LICENSE). See also the [privacy policy](PRIVACY_POLICY.md).
+[MIT](LICENSE). [Privacy policy](PRIVACY_POLICY.md).
