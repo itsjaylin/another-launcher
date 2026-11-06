@@ -61,7 +61,7 @@ SOFTWARE.
 
 ## McCal-Codes/Folio
 
-Folio was an early development and design reference. Its upstream MIT notice is preserved here.
+Folio inspired features; no Folio code was used. Its upstream MIT notice is preserved here.
 
 ```text
 MIT License
