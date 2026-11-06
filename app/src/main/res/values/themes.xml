@@ -1,0 +1,14 @@
+<resources>
+    <style name="Theme.AnotherLauncher" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <!-- Render into the punch-hole/cutout area in every orientation; insets keep interactive UI clear. -->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:windowBackground">#F3F5F9</item>
+        <item name="android:colorAccent">#315886</item>
+        <item name="android:windowSplashScreenBackground">#F3F5F9</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher</item>
+    </style>
+</resources>
