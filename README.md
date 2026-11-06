@@ -1,5 +1,7 @@
 # Another Launcher
 
+> I work on this in my free time. So updates are scheduled for whenever life stops opening new tabs.
+
 An Android launcher inspired by the **iPhone Duo homescreen launcher**, with a few added features for foldable phones. A floating dock, frosted glass, and a home screen that moves as you unfold it.
 
 It's off Google Play and now open source. Download it, customize it, and see how it feels.
