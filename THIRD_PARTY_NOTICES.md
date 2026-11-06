@@ -2,7 +2,7 @@
 
 The in-app credits acknowledge these MIT-licensed projects:
 
-- [DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher), by jakesgoodapps: widget sizing and dual-screen layout techniques.
+- [DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher), by jakesgoodapps: the foundation of Another Launcher’s code.
 - [adaptive_platform_ui](https://github.com/berkaycatak/adaptive_platform_ui), by berkaycatak: liquid glass UI techniques.
 
 Their license texts are included below. AndroidX, Compose, Kotlin and other Gradle dependencies retain their upstream licenses and notices.

@@ -35,7 +35,7 @@ You'll find it in `app/build/outputs/apk/debug/`. No original signing keys neede
 ## Credits
 
 - [McCal-Codes — Folio](https://github.com/McCal-Codes/folio): inspired features
-- [jakesgoodapps — DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher): foldable layouts and widget sizing
+- [jakesgoodapps — DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher): the foundation of the code
 - [Berkay Catak — adaptive_platform_ui](https://github.com/berkaycatak/adaptive_platform_ui): liquid glass styling
 
 License notices are [here](THIRD_PARTY_NOTICES.md).
