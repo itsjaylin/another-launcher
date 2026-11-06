@@ -13,7 +13,21 @@ The iPhone Duo homescreen launcher is the main visual inspiration: a spacious la
 - **Personalization:** frosted glass surfaces, status colors, optional app labels, and notification dots.
 - **Backup and restore:** export your layout and settings to JSON.
 
-See [the reference study](docs/REFERENCES.md) for the open-source projects and design references that also informed development.
+## Credits and acknowledgments
+
+Another Launcher draws on the work of these creators and projects. Credit goes to them for the ideas, examples, and techniques that helped shape it:
+
+- **[jakesgoodapps — DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher):** dual-screen home layouts, native widget sizing, and launcher organization. Also credited in the app.
+- **[Berkay Catak — adaptive_platform_ui](https://github.com/berkaycatak/adaptive_platform_ui):** liquid glass styling, layered reflections, and translucent surface techniques. Also credited in the app.
+- **[McCal-Codes — Folio](https://github.com/McCal-Codes/folio):** Duo/iOS-inspired foldable layout and visual references.
+- **[Vyom-2007 — DuoFoldWallpaper](https://github.com/Vyom-2007/DuoFoldWallpaper):** hinge-relative animation geometry and fold-effect references.
+- **[narayann7 — duo_animation](https://github.com/narayann7/duo_animation)** and **[duo_animation_playground](https://github.com/narayann7/duo_animation_playground):** motion curves, blur, and animation experiments.
+- **[JavSaia — AndroidDuo](https://github.com/JavSaia/AndroidDuo):** live UI rendering and transition-effect references.
+- **[marcoazeem — duo-open](https://github.com/marcoazeem/duo-open):** hinge sensor handling and motion smoothing references.
+- **[sAleksovski — react-native-android-widget](https://github.com/sAleksovski/react-native-android-widget):** Android widget behavior, layout, and interaction references.
+- **[Lawnchair contributors](https://github.com/LawnchairLauncher/lawnchair):** launcher behavior and Android edge-case references; consulted for behavior only, with no Lawnchair code bundled.
+
+See [the reference study](docs/REFERENCES.md) for the specific techniques and revisions studied, and [third-party notices](THIRD_PARTY_NOTICES.md) for the license texts accompanying the in-app credits.
 
 **Current source: 0.7.0-beta.5 (version code 12). Open source under the [MIT License](LICENSE). The app is no longer distributed through Google Play.**
 
