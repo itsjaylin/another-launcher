@@ -2,22 +2,21 @@
 
 ## Build setup
 
-- Android SDK Platform 37, Android Studio supporting AGP 9.4.0, Gradle wrapper 9.7.1.
-- Use Studio's bundled JDK or a compatible installed JDK. The implementation build used Studio's bundled JBR 25 and produced Java 17 bytecode.
-- Android Studio normally creates `local.properties` with `sdk.dir`. For terminal builds you can instead export `ANDROID_HOME` and `JAVA_HOME`.
-- First sync needs internet access for uncached dependencies; later builds can use `--offline`.
+Use Android SDK 37, an Android Studio version supporting AGP 9.4.0, and the Gradle 9.7.1 wrapper. The recorded build used Studio's JBR 25 and produced Java 17 bytecode.
+
+Studio creates `local.properties` with `sdk.dir`; terminal builds can use `ANDROID_HOME` and `JAVA_HOME`. First sync needs network access; cached builds can use `--offline`.
 
 ```sh
 ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
 ./gradlew :app:assembleRelease
 ```
 
-Outputs:
-
-- Debug: `app/build/outputs/apk/debug/app-debug.apk`
-- Release, unsigned: `app/build/outputs/apk/release/app-release-unsigned.apk`
-- JVM test report: `app/build/reports/tests/testDebugUnitTest/index.html`
-- Android lint: `app/build/reports/lint-results-debug.html`
+| Output | Path |
+| --- | --- |
+| Debug APK | `app/build/outputs/apk/debug/app-debug.apk` |
+| Unsigned release | `app/build/outputs/apk/release/app-release-unsigned.apk` |
+| JVM results | `app/build/reports/tests/testDebugUnitTest/index.html` |
+| Lint results | `app/build/reports/lint-results-debug.html` |
 
 ## Local state-machine experiment
 
@@ -60,166 +59,133 @@ Device check: open Library, search for an app, hold and move it. Confirm search/
 
 ## Automated coverage
 
-219 JVM tests cover:
+The latest interaction-update record reports **219 passing JVM tests**, with no failures, errors, or skips. Earlier device/release evidence below covers the prior 168-test source. These are recorded results, not a fresh run for this documentation update.
 
-- first-run default layout generation with dual 2×2 top widget prompt tiles and Row 2 app flow, selective in-place prompt replacement for square widgets while retaining sibling prompts, wide 4×2 widget replacement clearing sibling prompt slots, and codec round-trip validation;
-- device status telemetry defaults, copy integrity, cellular network formatting, and multi-cell signal strength level extraction;
-- first-run onboarding preference persistence, default incomplete state resolution on fresh install, completed state round-trip, backup restore bypass, 5-step pager bounds, and theme-adaptive contrast invariant resolution;
-- interactive color picker presets, HSV roundtrip conversion fidelity, hex parsing and formatting, invalid hex fallback, and dark/light contrast luminance calculation for UI element tinting;
-- multi-tier smart app categorization (`LibraryCategory.of`, `AppCategory.classify`) using Android platform categories, game flags, publisher/package signatures, and semantic keyword matching on label/package tokens to minimize "Other", with collision disambiguation (Perplexity, Uber Eats, Kindle, Prime Video), user override persistence, and in-settings refresh/reset;
+| Area | Coverage |
+| --- | --- |
+| First run | Two widget prompts, square/wide replacement, initial app positions, codec round trips |
+| Onboarding | Completion persistence, restored backups, safe replay, five-step bounds, theme contrast |
+| Status and colors | Network formatting, multi-cell signal, defaults, presets, HSV/hex conversion and invalid input |
+| Categories and search | Platform/package/label classification, collision guards, overrides, ranking, accent/prefix/acronym/subsequence matching |
+| Dock | Placement/rotation/multi-window policy, ordered favorites, capacity, duplicates, insertion bounds |
+| Home layout | Grouping on full grids, stationary hover, folder editing/sorting, nearest-cell reflow, no-space rejection, stacks, cross-page moves, removal and undo |
+| Persistence | Legacy migrations, schemas 3–5, provider metadata, strict decoding, default-page fallback, unique identities |
+| Hub | Separate widget-only canvas, full-grid rejection, edits preserving bindings, schema-4 migration |
+| Widget repair | Top-level/stacked orphan detection, same-cell/nearest-cell replacement, failure without space |
+| Backup | Full round trips, settings, legacy import, corrupt/unsupported schema rejection |
+| Widget geometry | Native fit, aspect ratio, zero sizes, provider limits, axis locks, origin shifts, drop bounds, resize deadband |
+| Responsive sizing | Default 100dp and optional 140dp caps, narrow/short windows, bounded wallpaper decoding without upscale |
+| Fold policy | Zero-thickness/off-center hinges, bad samples, closed recovery, sensorless handoff, stale resume, suppression |
+| Experimental motion | No initial animation, reversal, settling, equivalent 60/120Hz response |
+| Library and pager | Recent apps, filtering, Hub/Home/Library mapping, category layout, modal contrast |
+| Other local behavior | Weather location validation, package removal, arithmetic/percent/power parsing, Settings shortcuts, edit haptics |
 
-- the exact dock-position matrix, handedness, rotation and split-screen classification;
-- app-on-app folder creation on ordinary/full grids, same-page/cross-page/library drops, existing-folder deduplication, duplicate-shortcut no-op, stationary grouping previews, persistence round trips, preserved widget bindings, and non-grouping reflow;
-- off-center zero-thickness hinges on both axes;
-- invalid/missing angle samples and recovery from CLOSED posture;
-- no startup animation when WindowManager delivers its first feature;
-- sensorless display handoff, reversal, stale resume, interaction suppression and complete settling;
-- equivalent motion response at 60 and 120 Hz;
-- favorites insertion boundaries, capacity and duplicate prevention;
-- legacy pin/widget migration, overflow pages, shared app/widget occupancy, folder creation, cross-page widget moves, page deletion and strict layout decoding;
-- Hub widget isolation from normal page counts, widget-only enforcement, full-canvas fail-closed placement, move/resize/remove binding preservation, schema-5 round trip, and schema-4 empty-Hub migration;
-- wallpaper luminance/foreground selection, app category mapping (including Another Launcher Settings under Utilities) and ranked global search;
-- Weather/Analog placement, schema-3 upgrade preservation, stack/unstack round trips with real widget IDs, incompatible-span rejection, provider/profile deduplication, weather-location validation and package-removal cleanup;
-- schema-4 provider-identity round trip, v3 back-compat without provider keys, in-place binding replacement (same cell, nearest-cell fallback, fail-closed without room), orphan partitioning across top-level and stacked widgets, and stacked item page resolution;
-- full backup and restore round-trip including cellular indicator toggle persistence and legacy import, strict backup schema versioning, corrupt backup payload rejection, and legacy v3 layout import;
-- widget fit bounds/aspect ratio, transient zero-size handling, measured-grid span selection, provider resize limits, continuous home-grid sizing and home-screen provider filtering;
-- default home page designation: setting default page, persistent default across page reordering, fallback reassignment on page deletion or keeping-items removal, and undo restoration;
-- multi-directional widget resizing with origin coordinate shifting (left handle shifts column, top handle shifts row, boundary clamping at 0,0);
-- accurate drop target region bounds computation across multi-cell widget spans;
-- responsive grid cell capping: default `MAX_CELL_DP = 100dp`, optional 140dp inner portrait side layout cap, width-tracking on narrow cover screens, and height-tracking in short windows;
-- widget resize constraints: single-axis vs dual-axis locking, minimum 1×1 bounds, zero/negative span rejection, and max-dimension constraints;
-- inline math expression parser and evaluator (supporting arithmetic, percentages, powers, and zero-division protection);
-- search ranking enhancements: CamelCase-aware acronym/initial matching, ordered subsequence ranking, and 21 deep system settings shortcuts;
-- App Library category classification heuristics, 2x2 folder card layouts, and category sheet grouping;
-- edit-mode haptic jiggle animation clock dynamics;
-- PagerMap workspace pagination: Page 0 Hub mapping on single screen vs unfolded dual-pane Hub + Page 1 pairing on wide inner displays, Page N+1 App Library mapping, and bidirectional key-to-index resolution;
-- recent apps launch tracking, deduplication, capacity limiting, and uninstalled-app filtering;
-- theme contrast resolution for modal sheets (`CategoryFolderOverlay` and `FolderPanel`), ensuring crisp light typography and controls in dark mode and dark typography in light mode.
-
-`DuoRenderLayerTest` is an instrumentation test because real AGSL compilation is an Android framework operation. It builds/binds effects for both axes, several hinge positions and verifies the idle/zero-size bypass:
+### Instrumentation
 
 ```sh
 ./gradlew :app:connectedDebugAndroidTest
 ```
 
-Run on API 31/32 for the Gaussian-blur path and API 33+ (preferably API 37) for AGSL. The shader test passed on the connected Samsung API 37 device during this iteration. It validates shader creation/binding, not visual pixel equivalence or GPU frame timing.
-
-`HomeInteractionTest` uses public UI Automation input. It verifies the bottom dock, full-page Settings/Back, popup geometry, the drag follower/source placeholder, visible keyboard search results, and Samsung One UI "Wallpaper and style" (Dressroom) library launching via the Wallpaper button. On a full home page it uses the exposed Home-options accessibility action instead of modifying the user's layout. Drag input is canceled; no pin/uninstall/binding actions are committed.
-
-`WidgetHostFitTest` adds three checks: an oversized native-content fixture must fit completely and receive correctly transformed touch coordinates; an existing Samsung Weather binding must publish its real unpadded dimensions and keep its provider/ID intact; and a long-press on that live widget must pick it up for dragging (`drag-follower`) without opening `item-quick-popup`, with a same-cell drop preserving the exact layout. The Samsung-specific checks skip on devices without a bound Samsung Weather widget. The final connected-device run completed all device tests with normal pass statuses and no skips.
+- **`DuoRenderLayerTest`:** Builds experimental shaders for both hinge axes and checks idle/zero-size bypass. The recorded Samsung API 37 run passed. Use API 31/32 for the fallback and API 33+ for AGSL. This tests construction, not pixels, GPU timing, or the active fold path.
+- **`HomeInteractionTest`:** Dock, Settings/Back, popup geometry, drag follower, keyboard results, and Samsung Wallpaper & style. It cancels drag input and avoids committed pin/uninstall/binding changes.
+- **`WidgetHostFitTest`:** Native fit/touch fixture, Samsung Weather dimensions/identity, and pickup followed by a same-cell drop. Samsung checks skip without a bound provider. The earlier recorded run had no skips; it does not establish current full-suite status.
 
 ## If Android Studio reports “Can't find module entity for anotherlauncher.app”
 
-This is an IDE project-import failure. The Gradle root name is deliberately lowercase
-`anotherlauncher`, matching the project directory and the saved `anotherlauncher.app` module ID.
-The displayed app name remains **Another Launcher**.
+The Gradle root is lowercase `anotherlauncher`; the app's displayed name is **Another Launcher**. This error is an IDE import problem.
 
-1. Open the project root containing `settings.gradle.kts` and `gradlew`.
-2. Choose **File → Sync Project with Gradle Files** and wait for sync to complete.
-3. If that exact import error remains, use **File → Invalidate Caches → Invalidate and Restart**,
-   then sync again. A command-line build cannot refresh Studio's in-memory project model.
-4. In **Run → Edit Configurations**, select the Android App configuration and choose the
-   imported `anotherlauncher.app` module and **Default Activity** if the previous selection is invalid.
-5. Start a virtual device from **Tools → Device Manager**, or connect a phone with USB debugging
-   enabled and accept its debugging prompt. Select that device before pressing Run.
-
-`adb devices -l` must list a device in the `device` state for installation or instrumentation tests.
+1. Open the root containing `settings.gradle.kts` and `gradlew`, then sync Gradle.
+2. If it persists, invalidate caches/restart and sync again. A terminal build cannot refresh Studio's project model.
+3. In Run configurations, choose the imported `anotherlauncher.app` module and Default Activity.
+4. Start an emulator or authorize a USB-debugging device. `adb devices -l` must show it as `device`.
 
 ## First device run
 
-1. Run the `app` configuration. Hold an empty home cell → **Settings → Set as default home**.
-2. Open Settings and note the diagnostic window size, display ID, evidence, hinge angle and axis.
-3. Fold/unfold slowly with the launcher visible. Confirm the angle changes if One UI exposes the standard sensor. If it stays “not reported,” confirm the short metrics/posture transition still works.
-4. Open All apps, search, and switch displays while the drawer remains open. Search and scroll state should survive.
-5. Pin favorites, reorder them by dragging, add an app to the workspace, and reopen the app after a cold start. Ordered pins should persist.
-6. Add a widget, configure it if requested, then fold/rotate. Interact with the widget and confirm content updates and touch behavior. Cancel a second widget pick/configuration and verify it adds no empty tile.
+Before changing an existing install or layout, export **Settings → Backup and restore → Export backup** to Downloads. Verify the JSON is nonempty and contains the expected pages and favorites. Never uninstall a Play build to bypass a signature mismatch. Use an isolated QA package for destructive tests.
+
+1. Run `app` and set it as the default Home app.
+2. Note Settings diagnostics: window/display ID, posture evidence, hinge angle, and axis.
+3. Fold slowly. If no angle is reported, check metrics/posture handoff instead.
+4. Search in the Library and switch displays; query, browsing choice, and scroll should survive.
+5. Add/reorder favorites and a home app, then cold-start to check persistence.
+6. Add/configure a widget, fold/rotate, and test touch/content updates. Cancel another bind/configuration and check for empty tiles.
 
 ## Posture matrix
 
 | Scenario | Expected |
 | --- | --- |
-| Cover portrait | Side dock; compact workspace |
-| Cover landscape | Right-side Dock under Auto; no false unfold from rotation alone |
-| Inner landscape / square | Right-side Dock under Auto; Left only when explicitly selected |
-| Inner portrait | Bottom dock by default; optional left/right rail with wider edge-aligned 4×6 grid |
-| Half-open, stationary | No persistent blur; widgets/icons remain usable |
-| Rapid open → close → open | Flow changes direction; no stuck effects |
-| Split-screen/freeform | Side dock; narrow inner window stays classified by maximum metrics |
-| Launch directly on already-open device | Clear initial scene, no artificial opening animation |
-| Background, unfold, return later | Clear current layout; no replay of old motion |
-| Rotate while dragging | Drag cancels; no drop onto stale coordinates |
+| Cover portrait/landscape | Selected side dock; compact grid, safe insets |
+| Inner landscape/square | Selected side dock |
+| Inner portrait | Centered grid/bottom dock by default; optional wider grid/side dock |
+| Half-open, stationary | Usable widgets/icons; no fold blur |
+| Rapid open → close → open | Correct layout and cover wake; no stale state |
+| Split-screen/freeform | Side dock; maximum metrics retain inner classification |
+| Launch already unfolded | Current layout without an opening animation |
+| Background, unfold, return | Current layout without replaying motion |
+| Rotate during drag | Cancel drag; no drop at stale coordinates |
 
-In the emulator, create a foldable device in Device Manager and use **Extended controls → Virtual sensors / Device pose**. Exact controls depend on emulator/device profile. Where supported, `adb emu sensor set hinge-angle 90` can supply an intermediate hinge sample; changing a sensor alone may not switch the emulator's physical display mode, so also use its fold/unfold controls. `adb shell wm size` is a resize test, not a substitute for a true cover/inner transition.
+Use the emulator's foldable profile and **Extended controls → Virtual sensors / Device pose**. Where supported, `adb emu sensor set hinge-angle 90` changes the sensor, but may not switch panels. `adb shell wm size` tests resizing, not physical fold handoff.
 
-## Beta.4 closed-test acceptance
+## Beta.4 feedback checks
 
-- Before changing an existing launcher install or layout, export **Settings → Backup and restore → Export backup** to Downloads and verify the JSON contains the expected home pages and favorites. Do not uninstall the Play-installed app to work around a signing mismatch.
-- On a cover screen, confirm the lowest home icons sit near the bottom Hub/library controls, the page dots remain legible on light and dark wallpaper, and all tiles remain reachable without overlap with system gesture insets.
-- On an inner portrait screen, toggle **Settings → Dock → Wider inner-screen layout**. Confirm the default bottom dock and optional left/right rail both show the same home items and live widgets, and that drag/drop, widget taps, and page navigation still work.
-- Switch the App Library to A–Z, fold/unfold, close/reopen the library, and restart the process. The selected view must remain. This fold/unfold behavior was confirmed by the developer on the beta.4 QA build.
-- Choose each provider under **Settings → Web search**. Search from the App Library and confirm the browser opens the selected provider; app, contact, Settings, and math results must remain local. Confirm the selected provider survives a restart and backup/restore.
-- Install the Play-distributed beta.4 over beta.3 on at least one tester device to check saved layouts and widget bindings. A locally signed APK cannot update the Play-signed package because Android rejects the signature mismatch.
+These checks remain useful for current APKs; the old Play beta.3→beta.4 upgrade was a historical release gate.
+
+- Cover icons and page dots should stay reachable/readable over varied wallpapers without gesture-inset overlap.
+- Toggle **Dock → Wider inner-screen layout**. Both layouts must retain items, live widgets, drag/drop, and navigation.
+- Choose A–Z, fold, reopen, and restart. The choice must persist; folding was confirmed on the beta.4 QA build.
+- Try all four web providers; verify browser launch, saved choice, and backup/restore. Local results must remain local.
+- Test a compatible signed APK update without losing layouts/bindings. Different signing keys cannot update an existing install.
 
 ## Interaction and accessibility
 
-- Navigate to App Library via the last page or bottom search button toggle. Vertical scrolling inside a widget or app list must stay with that child.
-- Long-hold/release an icon for options. Long-hold/drag for dock insertion. Test the six-favorite limit and moving an existing favorite in a full dock.
-- Long-press several unobstructed wallpaper margins outside the 4×6 grid and Dock; each should open Home options. Confirm the same hold on icons, widgets, status controls, and Dock items keeps their own behavior, while horizontal movement still pages normally.
-- Open the bottom Home options dock → Widgets, Wallpaper, Pages, Edit, Settings. Add an app via empty page Add apps or Dock +, then tap it again to remove it. Verify checkmarks and counts update without uninstalling the package.
-- Tap the **Another Launcher Settings** app from the App Library or home grid; confirm it opens directly into the full **Launcher settings** page with Back navigation returning smoothly to home.
-- Confirm app names start hidden on Home, remain in the library, and can be enabled in the full Settings screen.
-- Check Weather at columns 0–1 and Analog clock at columns 2–3, each spanning two rows. Set a weather city manually, then use current-location detection and verify permission denial, disabled Location Services, real data, and offline behavior. Confirm the analog hands follow local time.
-- Hold an app/widget and verify an attached popup rather than a full dialog. Open Create stack, choose a compatible item, cycle the stack and unstack it. Native widget bindings must survive each operation.
-- Open Widgets and inspect application groups. Exact provider/profile duplicates must be absent; distinct provider sizes/variants must remain selectable. Cancel a bind and a required configuration; neither may leave an empty tile. Cancel reconfiguration of an existing widget and confirm it remains bound.
-- Enable Edit grid and use a minus control on Home and Dock. Drag an existing placement onto the Remove target. Confirm each operation removes only the intended placement.
-- Create a second page, move an app/widget to it, swipe between pages, and restart. Drag app-on-app to create a folder; rename it and toggle contents. Nonempty pages must not be deletable.
-- Long-press a widget, check movement and grid-size options, and verify a vertical scroll inside the widget does not open a menu. Test resize minimums with real providers.
-- Check Samsung Weather on both displays, in a small slot, and in a stack. The launcher should not clip its content or cover it with stack controls. Providers may intentionally choose different content/layouts at different sizes; this is distinct from host clipping.
-- On the connected test device, the existing Samsung Weather provider previously received 130×157dp after double padding. Version 0.4 reports its actual 146×173.33dp content area at scale 1.0, with zero host padding, preserving the same binding.
-- Select a library category, then type a query for an app in another category. Results should search globally; clearing the query should restore browsing. Verify accent-insensitive and word-prefix searches.
-- Enable TalkBack; check icon labels, App options custom actions, drawer controls and the single grouped status announcement.
-- Unfold in portrait and verify every app/widget page remains one evenly spaced continuous grid with no inserted hinge row gap. Fold, rotate, and unfold again; placements and widget bindings must not change.
-- In unfolded portrait, verify the 68dp Search button is flush to the bottom-left content corner, matches the Dock height, and does not shift or touch the centered Dock. Confirm every shortcut uses the magnifier and accessibility label Search, focuses the field after transition, and shows the keyboard.
-- Increase font/display size. Confirm the rail time and circular emblem fit safely below cutouts, and tap the emblem for the device-controls panel. Verify Wi-Fi, power-saving, and airplane-mode switches show live state, launch the matching Android control, and refresh after returning. Test both 12-hour and 24-hour formats.
-- Change Android/Samsung light and dark mode while Home, Settings, the library and a folder are open. Test bright and dark system wallpapers independently of system mode.
-- Enable Reduce motion and set Android's Animator duration scale to Off separately. Both should disable the fold effect; the local setting also disables grid rearrangement animation.
-- Deny cellular permission, then grant it from Settings. No crash and no fabricated signal levels in either state. Test airplane mode and a Wi-Fi-only device.
-- Open the keyboard in All apps, fold/rotate, dismiss the keyboard and press Home. Insets should keep the dock/search field reachable.
+- **Navigation:** Reach the Library from paging and Search. Home/Back returns to the default page; offscreen search must not consume Back. Child lists/widgets retain vertical scrolling.
+- **Wallpaper holds:** Open Home options from empty margins; holds on controls/items retain their own actions, and horizontal swipes still page.
+- **Apps and dock:** Check options, drag insertion, the six-pin limit, full-dock reorder, add/remove badges, outside dismissal, and the separate Settings app entry.
+- **Pages and folders:** Move items between pages and restart; test default-page selection, reorder, deletion/repacking, and undo. App-on-app creates a folder; test title rename, + app selection, persisted A–Z order, and dropping onto existing folders.
+- **Widgets:** Test popup vs pickup, resize axes/min/max, stacking/unstacking, and provider/profile variants. Canceling new configuration leaves no tile; canceling reconfiguration preserves the old binding.
+- **Samsung Weather:** Check both displays, small slots, and stacks for clipping or covered controls. Provider layout changes are distinct from host clipping. The historical 0.4 check corrected reported content from 130×157dp to 146×173.33dp at scale 1.0 without rebinding.
+- **First run and weather:** Check removable widget prompts and square/wide replacement. Test manual city, allowed/denied location, disabled location services, and offline weather.
+- **Library search:** Test categories, global results, accents/prefixes, matched/unmatched/blank queries, calculator, Settings, and opt-in contacts. Apps launch locally; the labeled Web action and IME Search open the chosen provider. Clear keeps focus; Cancel/Back closes search.
+- **Fold geometry:** Keep continuous 4×6 home grids with no hinge row. Preserve placements/bindings through rotation/folding. In inner portrait, check the independent bottom-left Search button and its deferred focus/IME.
+- **TalkBack and size:** Check icon names, custom actions, search controls, grouped status announcements, large fonts, and cutout clearance. Home labels start hidden and can be enabled.
+- **Status controls:** Test 12/24-hour time, live system-panel status, denied/granted signal permission, airplane mode, and Wi-Fi-only hardware. Never display invented signal levels.
+- **Theme and motion:** Check Home, Settings, Library, folders, and tour in both themes over bright/dark photos. Inspect glass labels, placeholders, icons, and selections. Reduce motion/system animator Off must be respected; the fold effect is already inactive.
+- **Keyboard:** Fold/rotate with search open, dismiss the keyboard, and press Home. Keep search/dock controls reachable throughout.
 
 ## Frame-time and continuity checks on hardware
 
-Use the release build with Android Studio's System Trace/Perfetto and FrameTimeline, observing several slow and fast folds at the device's supported refresh rates. Compare frame deadlines to the actual refresh rate (8.3 ms at 120 Hz; 16.7 ms at 60 Hz), and inspect both CPU and GPU work. Watch the first expanded layout, widget-heavy pages, and the maximum blur interval.
+Profile a release build with System Trace/Perfetto and FrameTimeline at supported refresh rates. Compare CPU/GPU deadlines (8.3ms at 120Hz; 16.7ms at 60Hz) during slow/fast folds, widget-heavy paging, and return Home. Check the first expanded layout and deferred widget refresh.
 
-Confirm that the render effect becomes null at rest and the controller stops scheduling frames. Pause half-open for a few seconds and background the Activity while an effect is running. Neither should leave continuous rendering or foreground sensor listeners active.
+Pause half-open and background the activity: no continuous fold rendering or foreground sensor listeners should remain. Record physical panel blanking separately from app-rendering hitches; One UI owns the panel/compositor switch. An external camera can help distinguish them.
 
-Record any visible black interval during physical panel switching separately from an app-rendering hitch: One UI owns that panel/compositor handoff. If available, film the fold with an external camera to see the two physical panels and the hinge together.
+Reset `dumpsys gfxinfo com.wiselion.anotherlauncher`, perform Hub/Home/Library swipes and return Home from an app, then separate deadline misses from cold composition. Confirm widgets retain IDs, remain visible during listener deferral, and refresh after resume.
 
-Before release, reset `dumpsys gfxinfo com.anotherlauncher`, perform repeated Hub/Home/Library swipes and return Home from another app, then inspect deadline misses separately from cold composition. Verify widgets retain their IDs, remain visible during the brief listener deferral, and refresh normally after resume.
+### Recorded validation status
 
-### Historical validation before the state-machine experiment
+The October 12 record reports 168 passing JVM tests, compiled debug/instrumentation artifacts, and a verified signed version-code 12 bundle. Lint had zero errors and 40 reviewed warnings: UseKtx (11), ConfigurationScreenWidthHeight (6), ObsoleteSdkInt (6), IconLauncherShape (5), IconDuplicates (5), ModifierParameter (3), and one each of RedundantLabel, AndroidGradlePluginVersion, Wakelock, and IconLocation. No suppressions were added; the timed fold wake lock was retained.
 
-The source before this experiment passed 168 JVM tests and builds debug, instrumentation and signed release bundle artifacts. Lint has zero errors and 40 reviewed warnings: UseKtx (11), ConfigurationScreenWidthHeight (6), ObsoleteSdkInt (6), IconLauncherShape (5), IconDuplicates (5), ModifierParameter (3), and one each for RedundantLabel, AndroidGradlePluginVersion, Wakelock and IconLocation. The timed wake-lock/fold handoff is retained; no warning suppressions were added. Earlier beta.3 hardware checks are historical, not current proof. Comprehensive provider variants, physical handoff timing and frame-time targets still require the manual checks above.
-
-Glass contrast manual check: inspect Hub weather, Add Widget, Library results, Library search, A-Z toggle, Recent apps, and folder sheets in both themes over bright and dark wallpapers. Verify text, placeholders, icons, and selected states remain readable.
-
-Library search separates ranked Apps from an explicit provider-labeled Web action. Test a matching app, an unmatched term, blank/whitespace input, calculator, Settings shortcuts and opt-in contacts. App taps launch apps; the Web action and keyboard Search key open the selected provider. Clear retains focus/IME, Cancel/Back exits search, and subsequent Back/Home returns to default Home without an offscreen drawer consuming it.
+Earlier beta.3 hardware results are historical. Broader provider variants, physical handoff timing, and frame targets still need manual validation.
 
 ## Search and widget Hub device checks
 
-`SearchHubInteractionTest` contains eight UI Automation checks and requires an isolated application ID ending in `.qa`; it skips against the production package because it seeds preferences and temporarily binds a widget. Build a disposable copy with that application ID and a distinct QA label, install both APKs with `--user 0`, and grant widget binding only to that QA package. Never clear, uninstall, or replace the Play-installed package for these tests.
+`SearchHubInteractionTest` has eight cases and requires an application ID ending in `.qa`; it skips production because it seeds settings and temporarily binds widgets. Build a disposable copy with a distinct label, install app/test APKs with `--user 0`, and grant widget binding only to QA. Never clear, replace, or uninstall the user's Play package for these tests.
 
-Coverage: Search accessibility/focus/keyboard and repeated taps; app + Google actions and clear/empty input; unmatched search/Back/Home; app-result launch; calculator/Settings results; selected provider action and IME launch; weather picker/Hub widget catalog with no Hub EditText; real native Hub widget bind/render/remove with weather location unchanged. Native-fit and touch-cancellation fixtures can run separately without touching a user's layout. Six sizing unit tests cover bounded wallpaper decode dimensions, aspect ratio, no upscale, invalid sizes and extreme integer bounds. Wallpaper picker photo/preset/rotation/application and contact-provider behavior still require manual hardware checks.
+Coverage includes repeated Search/focus/IME, app/web actions, clear/empty input, Back/Home, app launch, calculator/Settings, provider/IME launch, weather dialog, widget-only Hub picker, and native widget add/render/remove without changing weather location. Native-fit/touch fixtures run separately. Six wallpaper-sizing unit cases cover memory bounds, aspect ratio, no upscale, invalid sizes, and integer extremes.
 
-Discover preference persistence is not applicable: no accepted genuine Discover client is implemented. See [DISCOVER.md](DISCOVER.md); do not report a web-view substitute as Discover.
+Discover preference tests do not apply until a genuine client works. See [DISCOVER.md](DISCOVER.md).
 
 ### October 12 device evidence and limits
 
-Hardware checks used an isolated `com.wiselion.anotherlauncher.qa` install on the connected Samsung foldable; the Play install and its data were not modified. All eight search/Hub cases passed on the inner display in individual or grouped runs before the final Home-navigation guards. Cover-screen runs passed repeated search focus/IME, app and web results, clear/blank input, unmatched-query Back/Home, app launch, calculator/Settings actions, external provider/IME launch and native Hub widget add/render/remove. Native-fit and touch-cancellation fixtures also passed.
+Tests used `com.wiselion.anotherlauncher.qa` on a Samsung foldable, leaving the Play app and its data unchanged. All eight search/Hub cases passed individually or in groups on the inner display before the final Home guards. Cover runs passed search/IME, app/web results, clear/blank queries, Back/Home, app launch, calculator/Settings, provider launch, and native Hub widget management. Native-fit/touch-cancellation fixtures also passed.
 
-The final cover-screen Hub weather-dialog rerun failed because automation tapped during the remaining page animation. The test now waits for those frames; its final rerun was not completed before the phone was released. Combined instrumentation runs also experienced intermittent USB/UI Automation disconnects, so the complete suite is not claimed as passing in one final run. The newest Home-navigation guards have only limited device coverage; repeat the full posture matrix before production rollout. Manual photo/preset/wallpaper application, optional contact permission/provider results, TalkBack and broader widget-provider variants remain outstanding.
+The final cover weather-dialog retest failed after a tap during page animation. A wait was added, but not rerun before the phone was released. Combined runs also had USB/UI Automation disconnects: there is no final all-green combined suite. Latest Home guards have limited device coverage. Repeat the posture matrix before release; photos/presets/application, contacts, TalkBack, and more widget variants remain manual work.
 
 ## Streamlined optional permissions
 
-Check onboarding and Settings with permissions initially denied: a single feature tap must open Android's permission prompt (contacts, signal, location) or notification-access settings directly, with no Agree/Continue dialog. Inline explanations must be complete on narrow screens and large fonts. Declining contacts leaves search disabled and retryable; denying location keeps manual city search usable; denying signal keeps the launcher usable; returning from notification settings refreshes access state. Already-granted permissions must not prompt again. Skipping onboarding or leaving Settings must not request any permission. Preserve the manually opened privacy policy.
+One feature tap in onboarding/Settings should open the OS permission prompt or notification settings directly. Keep the inline explanation complete on narrow screens and large fonts; do not add Agree/Continue dialogs.
 
-`PermissionFlowTest` adds five isolated-QA-only cases. All five passed individually on the connected Samsung foldable: contacts opens the OS prompt directly, denial leaves search off and permits retry; cellular permission grant activates the feature; location denial retains editable manual city search; onboarding opens notification-access settings directly and returns to the tour; and the manually opened privacy policy still dismisses normally. Each case reset only the `.qa` package. The Play install, its default-Home role and layout were unchanged. Final local checks passed 168 JVM tests, compiled the instrumentation APK, and produced zero lint errors with the same 40 reviewed warnings. The signed version-code 12 release bundle was built and its package, version and signature verified. Large-font, TalkBack and already-granted permission variants remain manual checks.
+- Denied contacts stay off and retryable; denied location keeps manual city search; denied signal leaves the launcher usable.
+- Returning from notification settings refreshes access state. Granted permissions must not prompt again.
+- Skipping onboarding, navigation, and dismissal must never request access. The manually opened privacy policy remains dismissible.
+
+All five `PermissionFlowTest` cases passed individually on the isolated Samsung QA install: contacts prompt/denial/retry, cellular grant, location denial/manual city, notification-settings return, and privacy-policy dismissal. Only QA was reset; the Play layout and default-Home role were unchanged. Large-font, TalkBack, and already-granted variants remain manual checks.

@@ -7,13 +7,13 @@ These Terms of Service govern your use of Another Launcher, an Android home scre
 
 ## 1. App license and acceptable use
 
-The open-source software is licensed under the MIT License in LICENSE. That license governs permission to use, copy, modify, and distribute the software and takes precedence over any conflicting provision of these terms. Third-party components retain their respective licenses.
+The software is licensed under the [MIT License](LICENSE). That license governs permission to use, copy, modify, and distribute the software and takes precedence over any conflicting provision of these terms. Third-party components retain their respective licenses.
 
 ## 2. Your device, settings, and backups
 
-Another Launcher changes how your Android home screen displays and launches apps. Android versions, device makers, foldable displays, permissions, and other installed apps may affect its behavior. You are responsible for choosing your device settings and maintaining copies of important information. Before resetting, uninstalling, changing devices, or installing a test build, use the app's backup feature if you want to preserve your launcher layout. We do not guarantee that a backup or restore will succeed in every circumstance.
+Another Launcher changes your Android home screen. Its behavior depends on your device, Android version, permissions, and other apps. You are responsible for your settings and backups. Back up your layout before resetting, uninstalling, changing devices, or installing a test build. Backup and restore are not guaranteed to work in every circumstance.
 
-The app may make it easier to open, move, or remove shortcuts and widgets, but it does not control the content or operation of third party apps and widgets.
+The app manages shortcuts and widgets, but does not control third-party apps or their content.
 
 ## 3. External services
 
@@ -49,4 +49,4 @@ If a provision is unenforceable, the remaining provisions remain in effect. Fail
 
 ## 10. Contact
 
-For questions about these terms, use the developer contact information on Another Launcher's Google Play listing.
+For questions about these terms, use the [project support page](https://github.com/itsjaylin/another-launcher/issues).

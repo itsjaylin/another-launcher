@@ -1,11 +1,22 @@
-# Genuine Google Discover investigation
+# Google Discover investigation
 
-Checked October 12, 2026 against the launcher source and the connected Samsung SM-F971U (API 37).
+Checked October 12, 2026 against the source and a Samsung SM-F971U running API 37.
 
-The phone's Google app exposes `com.android.launcher3.WINDOW_OVERLAY` through `com.google.android.apps.gsa.nowoverlayservice.DrawerOverlayService`. Service resolution for Another Launcher's caller URI succeeds. This proves the component exists, not that Google accepts this launcher or supplies an overlay session. Another Launcher has no overlay client, service connection, companion bridge or Discover dependency.
+## What was found
 
-No documented public Android API for embedding the personalized Google Discover launcher feed was found. AOSP's [LauncherOverlayManager](https://android.googlesource.com/platform/packages/apps/Launcher3/+/bb3af5d904586d8f3165cc10e52e7e445e19ea46/src_plugins/com/android/systemui/plugins/shared/LauncherOverlayManager.java) describes launcher-side lifecycle, attachment and scroll callbacks; it does not grant access to Google's feed. Third-party [Lawnfeed](https://github.com/LawnchairLauncher/lawnfeed) uses a separately installed companion and a private overlay bridge. Its [bridge implementation](https://github.com/amirzaidi/AIDLBridge/blob/master/app/src/main/java/amirz/aidlbridge/BridgeImpl.java) binds Google explicitly and constructs the companion caller identity. The old [launcherclient repository](https://github.com/LawnchairLauncher/launcherclient) is archived, which increases maintenance risk.
+The Google app exposes `com.android.launcher3.WINDOW_OVERLAY` through `com.google.android.apps.gsa.nowoverlayservice.DrawerOverlayService`. Service resolution succeeds, but that does not prove Google accepts this launcher or provides a feed session. Another Launcher has no overlay client, companion bridge, or Discover dependency.
 
-A genuine integration would require a compatible licensed overlay client, a caller/companion Google actually accepts, the installed Google app with usable feed/account state, and validated lifecycle/scroll/window attachment behavior. It must handle service loss, Google-app changes, package visibility, folding/window recreation, keyboard/Back, and disabled/unavailable feed states. Service resolution alone does not verify these requirements. Companion distribution and compatibility must be checked before shipping; no companion was installed or modified during this investigation.
+No documented public API for embedding the personalized feed was found. AOSP's [LauncherOverlayManager](https://android.googlesource.com/platform/packages/apps/Launcher3/+/bb3af5d904586d8f3165cc10e52e7e445e19ea46/src_plugins/com/android/systemui/plugins/shared/LauncherOverlayManager.java) defines lifecycle/scroll callbacks, not access to Google's feed. [Lawnfeed](https://github.com/LawnchairLauncher/lawnfeed) uses a separate companion and private [bridge](https://github.com/amirzaidi/AIDLBridge/blob/master/app/src/main/java/amirz/aidlbridge/BridgeImpl.java) to bind Google with the companion's identity. The older [launcherclient](https://github.com/LawnchairLauncher/launcherclient) is archived.
 
-For this change, Discover is unavailable in Another Launcher. The Hub remains a weather/widget page in its existing pager position. No generic browser/web view is labeled Discover and no nonfunctional Hub/Discover selector is exposed. Once a genuine accepted session works on supported devices, add a DataStore-backed preference with backup/restore compatibility, widget Hub fallback, and restart/fold availability tests. Existing Hub widgets and weather must remain stored when switching.
+## What still needs to work
+
+- A compatible client with suitable licensing and a caller/companion Google accepts.
+- A usable Google app/feed/account state, with attachment, scrolling, and lifecycle handling verified on hardware.
+- Recovery from service loss, Google updates, folding/window recreation, keyboard/Back, and unavailable feeds.
+- A viable companion distribution and compatibility plan. No companion was installed during this investigation.
+
+## Current behavior
+
+Discover is unavailable. The Hub stays a weather/widget page; there is no inactive selector or web view labeled Discover.
+
+Once a real session works, add a saved choice with backup/restore support, preserve Hub content, and fall back to the Hub when unavailable. Test restart/fold behavior before shipping.

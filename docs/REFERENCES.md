@@ -1,6 +1,6 @@
 # Transition reference study
 
-The five supplied repositories were inspected for animation math, trigger choices, rendering ownership and edge behavior. Another Launcher's engine is an original Kotlin/AGSL implementation; no source assets or wallpaper images from these projects are bundled.
+These references informed the experimental Kotlin/AGSL fold engine, now disconnected from the active workspace. No source assets or wallpapers from these five projects are bundled.
 
 | Reference and inspected revision | Files studied | Takeaway applied |
 | --- | --- | --- |
@@ -12,13 +12,13 @@ The five supplied repositories were inspected for animation math, trigger choice
 
 The Flutter references principally model device **tilt** using orientation/gyro data; those are not physical hinge measurements. Another Launcher uses the standard hinge sensor and WindowManager as its real triggers. The root-hook and system-overlay approaches in other PoCs are unnecessary for rendering a launcher-owned surface.
 
-The visual design is inspired by the supplied Duo demonstrations. The device-independent motion curves here are tunable rather than an assertion of an exact proprietary OS implementation.
+The motion curves are tunable experiments, not an exact reproduction of a proprietary OS.
 
 ## Home UX reference for 0.2 alpha
 
-[DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher/tree/f1bc0f1c5a76637f3fc46a60beed5c331b5fd917) was studied at revision `f1bc0f1c5a76637f3fc46a60beed5c331b5fd917`: `docs/architecture.md`, `LayoutModel.kt`, `Appearance.kt`, and `AppLibrary.kt`. Useful patterns were durable cell/widget identities, a shared four-column grid, native widget gesture ownership, and separating appearance settings from home editing. No source or assets from that repository are bundled.
+[DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher/tree/f1bc0f1c5a76637f3fc46a60beed5c331b5fd917) was studied at revision `f1bc0f1c5a76637f3fc46a60beed5c331b5fd917`: `docs/architecture.md`, `LayoutModel.kt`, `Appearance.kt`, and `AppLibrary.kt`. Patterns studied: durable item IDs, a four-column grid, widget gesture ownership, and separate appearance/editing settings. See [third-party notices](../THIRD_PARTY_NOTICES.md) for attribution and licensing.
 
-[Folio](https://github.com/McCal-Codes/folio) and [Lawnchair](https://github.com/LawnchairLauncher/lawnchair) were supplied as additional launcher-behavior references. Folio and DuoLauncher are permissive references; Lawnchair is GPL-3.0 and is used only to understand public behavior and Android edge cases. No Lawnchair source is copied, adapted, linked, or bundled, preserving Another Launcher’s independent licensing options.
+[Folio](https://github.com/McCal-Codes/folio) and [Lawnchair](https://github.com/LawnchairLauncher/lawnchair) were supplied as additional launcher-behavior references. Folio declares MIT at the repository root; that does not establish the license or provenance of every component. DuoLauncher declares MIT. Lawnchair is GPL-3.0 and was used only to study public behavior and Android edge cases; no Lawnchair code is copied, adapted, linked, or bundled.
 
 The supplied unfolded and close-up status images informed the two aligned page sections, edge dock/search placement, and time-plus-circular status module. Familiar long-press, pickup, remove-target and page-edge gestures guide direct manipulation; the full configurable gesture systems of other launchers are outside this alpha's scope.
 
@@ -37,21 +37,21 @@ Reviewed against Samsung Developer and Android guidance for the Galaxy Z Fold 8 
 | [App continuity](https://developer.samsung.com/galaxy-z/app-continuity.html): `resizeableActivity="true"`, keep task state across fold/unfold, retain UI state in ViewModel | Compliant: resizable activity, full config-change handling, `LauncherViewModel` + DataStore + `SavedStateHandle` survive display switches; search text, scroll and selected page persist |
 | [Continue apps on cover screen](https://developer.samsung.com/codelab/galaxy-z/app-continuity.html) is a **per-app system toggle** (`Settings → Display`) | Surfaced in-app: Settings → Device & integration names the toggle, since a missing opt-in looks like a launcher blackout on close |
 | [Designing for foldables](https://developer.samsung.com/one-ui/largescreen-and-foldable/designing_for_foldable.html): fill the screen, keep scroll position, keep text input + keyboard, no letterboxing | Compliant: edge-to-edge, no letterboxing; drawer scroll, query and selected page are `rememberSaveable`/ViewModel state |
-| [Flex mode](https://developer.samsung.com/galaxy-z/flex-mode.html): content top / controls bottom, visual transition, keep interactive elements off the crease | Compliant: tabletop postures reserve a real hinge row-gap, spanned widgets keep full height, short blur bridge plays on posture change and settles (no persistent effect while reading half-open) |
+| [Flex mode](https://developer.samsung.com/galaxy-z/flex-mode.html): content top / controls bottom, visual transition, keep interactive elements off the crease | Future work: dedicated tabletop layout. Current home grids stay continuous, and the experimental fold blur is inactive |
 | [FoldingFeature API](https://developer.android.com/reference/kotlin/androidx/window/layout/FoldingFeature): `isSeparating`/`occlusionType` decide whether content must lay out around the feature | `FoldStateTracker` validates feature bounds against the window (zero-thickness lines valid) and splits wide panes with a 12 dp gutter per side |
-| [Landscape-first Fold 8 guidance](https://developer.android.com/blog/posts/optimize-your-apps-for-the-next-generation-of-samsung-galaxy-devices): no hardcoded orientations/sizes, track actual window space, fold-aware layouts | No hardcoded Fold resolutions anywhere; dock stays right under Auto and honors an explicit Left setting, panes derive from live window + `maximumSmallestWidthDp`, hinge placement converts window → workspace coordinates |
+| [Landscape-first Fold 8 guidance](https://developer.android.com/blog/posts/optimize-your-apps-for-the-next-generation-of-samsung-galaxy-devices): no hardcoded orientations/sizes, track actual window space, fold-aware layouts | Live metrics and `maximumSmallestWidthDp` drive layouts. Dock side is explicit Left/Right, with bottom as the inner-portrait default; there is no Auto option |
 | Display-cutout guidance (`shortEdges` so content renders into the cutout area in every orientation) | `Theme.AnotherLauncher` sets `windowLayoutInDisplayCutoutMode=shortEdges`; safe-drawing/cutout/navigation insets reserve interactive UI |
 
-Launcher-parity notes from 2026 Pixel/third-party reviews: type-ahead Enter launches the top match (already the drawer behavior), published app shortcuts surface in long-press menus, notification dots use a listener service with explicit user grant, and widget stacks (already implemented here) remain absent from Pixel itself.
+Behavior references include published app shortcuts in long-press menus, notification access, and widget stacks. Current Library IME Search opens the selected web provider; app results have separate launch actions.
 
 ## Additional Architectural & Adaptive Layout References (0.7.0)
 
-The following references are maintained as permissive architectural, ergonomic, and adaptive design guides for ongoing development:
+Additional layout, widget, and styling references:
 
-- **[Folio](https://github.com/McCal-Codes/folio)** (MIT License): Studied for Duo/iOS aesthetic styling on foldables. Used as reference for layout inspiration; day/date header styling over wallpaper was explicitly audited and removed in 0.7.0 in favor of a clean, high-contrast dedicated native widget and search canvas.
-- **[DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher)** (MIT License): Studied for dual-screen and foldable ergonomics, zero-padding widget hosting patterns, and clean separation of appearance tokens.
-- **[react-native-android-widget](https://github.com/sAleksovski/react-native-android-widget)** (MIT License): Studied for Android widget tree layouts, RemoteViews composition, click action dispatch patterns (`clickAction`), and deep-link routing. Informs our widget hosting architecture to ensure external widget structures, touch bounding boxes, and click intents are uniformly preserved without coordinate skewing or duplicate container padding.
-- **[adaptive_platform_ui](https://github.com/berkaycatak/adaptive_platform_ui)** (MIT License): Studied for modern platform-adaptive liquid glass UI, multi-layered translucent surfaces, and specular edge reflections. Informs Another Launcher's `Modifier.glass(..., frosted = true)` shader and styling pipeline across homescreen controls and Launcher Settings.
+- **[Folio](https://github.com/McCal-Codes/folio)**: Foldable/Duo-style layout inspiration. Root license declares MIT; see [the licensing notes](../THIRD_PARTY_NOTICES.md#mccal-codesfolio) for scope and upstream sources.
+- **[DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher)** (MIT): Foldable ergonomics, widget sizing, and appearance separation.
+- **[react-native-android-widget](https://github.com/sAleksovski/react-native-android-widget)** (MIT): RemoteViews layouts, click actions, and deep links.
+- **[adaptive_platform_ui](https://github.com/berkaycatak/adaptive_platform_ui)** (MIT): Layered glass surfaces and edge reflections.
 - **[Android ConstraintLayout Foldables](https://developer.android.com/training/constraint-layout/foldables)**: Official developer guide on reactive foldable guidelines, `SharedValues`, and fold-aware constraint positioning.
 - **[Android Large Screens Guide](https://developer.android.com/guide/topics/large-screens)**: Best practices for responsive window sizing, multi-window mode, and dynamic metrics handling.
 - **[Android UI Design Gallery](https://developer.android.com/design/ui/gallery)**: Material Design and adaptive layout showcase patterns for Android applications.
@@ -63,5 +63,5 @@ The following references are maintained as permissive architectural, ergonomic, 
   - [The future unfolds! How to optimize Android apps for adaptive layouts (`pLNJ-fNYTKU`)](https://www.youtube.com/watch?v=pLNJ-fNYTKU): Guidance on adaptive Jetpack Compose development for foldable and large-screen form factors.
   - [Foldable App Continuity & Multi-window (`-9zVrVmnbO4`)](https://www.youtube.com/watch?v=-9zVrVmnbO4): Form factor transitions and display handoff techniques.
 
-No proprietary or non-permissive code or assets are copied or bundled; all open-source patterns are adapted and innovated upon with original Kotlin and Jetpack Compose implementations.
+Licenses and preserved notices are in [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
 

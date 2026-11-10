@@ -1,11 +1,11 @@
 # Third-party notices
 
-The in-app credits acknowledge these MIT-licensed projects:
+The in-app credits include these MIT-licensed projects:
 
 - [DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher), by jakesgoodapps: the foundation of Another Launcher’s code.
 - [adaptive_platform_ui](https://github.com/berkaycatak/adaptive_platform_ui), by berkaycatak: liquid glass UI techniques.
 
-Their license texts are included below. AndroidX, Compose, Kotlin and other Gradle dependencies retain their upstream licenses and notices.
+License texts are preserved below. AndroidX, Compose, Kotlin, and other Gradle dependencies keep their upstream licenses and notices.
 
 ## jakesgoodapps/DuoLauncher
 
@@ -61,7 +61,7 @@ SOFTWARE.
 
 ## McCal-Codes/Folio
 
-Folio inspired features; no Folio code was used. Its upstream MIT notice is preserved here.
+Folio is credited for feature inspiration. Its root [LICENSE](https://github.com/McCal-Codes/folio/blob/09db132dac9a0d06e85de39853fbbe21325d3e92/LICENSE) declares MIT and retains the Duo Launcher copyright notice reproduced below. Its [third-party notices](https://github.com/McCal-Codes/folio/blob/09db132dac9a0d06e85de39853fbbe21325d3e92/THIRD_PARTY_NOTICES.md) list separate dependency licenses and distinguish included code from inspiration. These declarations are not an independent audit of every component’s origin or licensing.
 
 ```text
 MIT License
