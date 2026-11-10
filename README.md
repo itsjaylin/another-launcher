@@ -20,8 +20,8 @@ Already using it? Export your layout backup first. If Android says the signature
 
 - Native Android widgets. Resize them, stack them, move them around.
 - A separate page for weather and widgets.
-- An App Library with app search, a calculator, and web search.
-- Custom pages, folders, dock placement, and colors.
+- An App Library with app search, a calculator, and web search. Drag a search result to place it on your home screen.
+- Custom pages, folders, dock placement, and colors. Drag an app onto another to group them. Tap the group title to rename, use + to add apps, or A–Z to sort.
 - Backup and restore for your layout.
 
 ## Build it yourself
@@ -50,7 +50,7 @@ This started with Fable. Astra in Codex helped code it from there.
 
 Open an issue with your phone model, Android version, and what happened. Steps to reproduce help. Pull requests are welcome too.
 
-For the technical stuff: [development guidelines](AGENTS.md), [testing notes](docs/TESTING.md), and [roadmap](ROADMAP.md).
+For the technical stuff: [development guidelines](AGENTS.md), [testing notes](docs/TESTING.md), [state and navigation guide](docs/STATE_MACHINES.md), and [roadmap](ROADMAP.md).
 
 ## License
 

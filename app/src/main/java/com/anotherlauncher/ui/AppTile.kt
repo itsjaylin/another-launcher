@@ -56,7 +56,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 data class DragSession(val app: AppEntry?, val origin: Offset, val position: Offset,
-    val favorite: Boolean?, val itemId: String? = null, val label: String = app?.label ?: "Item", val sourceBounds: Rect = Rect.Zero) {
+    val favorite: Boolean?, val itemId: String? = null, val label: String = app?.label ?: "Item", val sourceBounds: Rect = Rect.Zero,
+    val trackedByRoot: Boolean = false) {
     val previewTopLeft: Offset get() = position - (origin - sourceBounds.topLeft)
 }
 
@@ -67,20 +68,27 @@ class LauncherDragState {
     var onHold: (DragSession) -> Unit = {}
     var holdSlop = 20f
     var onPickup: () -> Unit = {}
-    fun begin(app: AppEntry?, position: Offset, favorite: Boolean?, itemId: String? = null, label: String = app?.label ?: "Item", bounds: Rect = Rect.Zero) {
-        session = DragSession(app, position, position, favorite, itemId, label, bounds)
+    fun begin(app: AppEntry?, position: Offset, favorite: Boolean?, itemId: String? = null, label: String = app?.label ?: "Item", bounds: Rect = Rect.Zero,
+        trackedByRoot: Boolean = false) {
+        session = DragSession(app, position, position, favorite, itemId, label, bounds, trackedByRoot)
         onPickup()
     }
     fun move(delta: Offset) { session = session?.let { it.copy(position = it.position + delta) } }
+    /** Root coordinates remain stable when the source grid scrolls or leaves composition. */
+    fun moveFromRoot(position: Offset) {
+        session = session?.takeIf { it.trackedByRoot }?.copy(position = position) ?: session
+    }
+    fun finishFromSource() { if (session?.trackedByRoot != true) finish() }
+    fun cancelFromSource() { if (session?.trackedByRoot != true) cancel() }
     fun updateSourceBounds(bounds: Rect) {
         if (bounds.width > 0 && bounds.height > 0) session = session?.copy(sourceBounds = bounds)
     }
     fun cancel() { session = null }
     fun finish() {
-        session?.let {
-            if ((it.position - it.origin).getDistance() < holdSlop) onHold(it) else onDrop(it)
-        }
+        val completed = session ?: return
+        // Consume before invoking effects: a callback may start another drag or throw.
         session = null
+        if ((completed.position - completed.origin).getDistance() < holdSlop) onHold(completed) else onDrop(completed)
     }
 }
 
@@ -122,6 +130,7 @@ fun AppTile(
     onBounds: (Rect) -> Unit = {},
     hasDot: Boolean = LocalNotificationDots.current.contains(app.info.componentName.packageName),
     iconSize: androidx.compose.ui.unit.Dp? = null,
+    handoffDragToRoot: Boolean = false,
 ) {
     var bounds by remember { mutableStateOf(Rect.Zero) }
     val interactions = remember { MutableInteractionSource() }
@@ -145,12 +154,15 @@ fun AppTile(
             }
             .clickable(interactionSource = interactions, indication = null,
                 onClickLabel = if (membership == null) "Open ${app.label}" else if (membership) "Remove ${app.label}" else "Add ${app.label}", onClick = onClick)
-            .pointerInput(app.id, favorite, itemId) {
+            .pointerInput(app.id, favorite, itemId, handoffDragToRoot) {
                 detectDragGesturesAfterLongPress(
-                    onDragStart = { drag.begin(app, bounds.topLeft + it, favorite, itemId, bounds = bounds) },
-                    onDrag = { change, amount -> change.consume(); drag.move(amount) },
-                    onDragCancel = drag::cancel,
-                    onDragEnd = drag::finish,
+                    onDragStart = { drag.begin(app, bounds.topLeft + it, favorite, itemId, bounds = bounds, trackedByRoot = handoffDragToRoot) },
+                    onDrag = { change, amount ->
+                        change.consume()
+                        if (drag.session?.trackedByRoot != true) drag.move(amount)
+                    },
+                    onDragCancel = drag::cancelFromSource,
+                    onDragEnd = drag::finishFromSource,
                 )
             }.padding(horizontal = padH, vertical = padV),
         horizontalAlignment = Alignment.CenterHorizontally,

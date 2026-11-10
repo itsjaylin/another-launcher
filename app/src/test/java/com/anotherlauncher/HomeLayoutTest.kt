@@ -80,47 +80,31 @@ class HomeLayoutTest {
         assertNull(result.item("new-drag"))
     }
 
-    @Test fun droppingAppOnAppSwapsPositionsWithoutGrouping() {
-        var layout = HomeEditor.add(HomeLayout(), "home", app("a")).layout
-        layout = HomeEditor.add(layout, "home", app("b")).layout
-        assertEquals(0, layout.item("a")!!.column)
-        assertEquals(0, layout.item("a")!!.row)
-        assertEquals(1, layout.item("b")!!.column)
-        assertEquals(0, layout.item("b")!!.row)
-
-        layout = HomeEditor.move(layout, layout.item("b")!!, "home", 0, 0).layout
-        val movedB = layout.item("b")!!
-        val swappedA = layout.item("a")!!
-
-        assertEquals(HomeItemKind.APP, movedB.kind)
-        assertEquals(HomeItemKind.APP, swappedA.kind)
-        assertEquals(0, movedB.column)
-        assertEquals(0, movedB.row)
-        assertEquals(1, swappedA.column)
-        assertEquals(0, swappedA.row)
-        assertValid(layout)
+    @Test fun droppingAppOnAppCreatesAFolderAtTheTargetCell() {
+        val a = app("a")
+        val b = app("b").copy(column = 1)
+        val initial = HomeLayout(listOf(HomePage("home", listOf(a, b))))
+        val result = HomeEditor.move(initial, b, "home", 0, 0)
+        assertNull(result.error)
+        val folder = result.layout.pages.single().items.single()
+        assertEquals(HomeItemKind.FOLDER, folder.kind)
+        assertEquals(listOf("package/a", "package/b"), folder.contents)
+        assertEquals(0, folder.column)
+        assertEquals(0, folder.row)
+        assertValid(result.layout)
     }
 
-    @Test fun swappingAppsOnFullPagePreservesAllItems() {
+    @Test fun groupingAppsOnAFullPagePreservesEveryAppAndOtherPlacements() {
         var layout = HomeLayout()
         repeat(24) { layout = HomeEditor.add(layout, "home", app("x$it")).layout }
-        val beforeIds = layout.pages.first().items.map { it.id }.sorted()
-        assertEquals(24, beforeIds.size)
-
-        val first = layout.item("x0")!!
-        val last = layout.item("x23")!!
-        assertEquals(0, first.column); assertEquals(0, first.row)
-        assertEquals(3, last.column); assertEquals(5, last.row)
-
-        val result = HomeEditor.move(layout, last, "home", 0, 0).layout
-        assertNull(HomeEditor.move(layout, last, "home", 0, 0).error)
-        val afterFirst = result.item("x23")!!
-        val afterLast = result.item("x0")!!
-
-        assertEquals(0, afterFirst.column); assertEquals(0, afterFirst.row)
-        assertEquals(3, afterLast.column); assertEquals(5, afterLast.row)
-        assertEquals(beforeIds, result.pages.first().items.map { it.id }.sorted())
-        assertValid(result)
+        val untouched = layout.pages.single().items.filterNot { it.id == "x0" || it.id == "x23" }
+        val result = HomeEditor.move(layout, layout.item("x23")!!, "home", 0, 0)
+        assertNull(result.error)
+        val folder = result.layout.pages.single().items.single { it.kind == HomeItemKind.FOLDER }
+        assertEquals(listOf("package/x0", "package/x23"), folder.contents)
+        assertEquals(untouched, result.layout.pages.single().items.filter { it.kind != HomeItemKind.FOLDER })
+        assertEquals(24, result.layout.pages.single().items.sumOf { if (it.kind == HomeItemKind.FOLDER) it.contents.size else 1 })
+        assertValid(result.layout)
     }
 
     @Test fun droppingOnFolderDoesNotDuplicateItsApps() {

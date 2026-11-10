@@ -166,7 +166,7 @@ fun Workspace(
         navigating = true
         try {
             if (pager.currentPage != targetIndex || pager.currentPageOffsetFraction != 0f) {
-                if (returningHome || reducedMotion || previousCount != count) pager.scrollToPage(targetIndex)
+                if (returningHome || reducedMotion || previousCount != count || drag.session?.trackedByRoot == true) pager.scrollToPage(targetIndex)
                 else pager.animateScrollToPage(targetIndex, animationSpec = tween(320))
             }
         } finally { previousCount = count; navigating = false }

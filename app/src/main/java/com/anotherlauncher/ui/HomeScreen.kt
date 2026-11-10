@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -92,19 +93,25 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
     var query by rememberSaveable { mutableStateOf("") }
     var searchSequence by rememberSaveable { mutableIntStateOf(0) }
     var librarySearchRequest by rememberSaveable { mutableIntStateOf(0) }
+    var lastHomePage by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(selectedPage, prefs.home.pages) {
+        if (prefs.home.pages.any { it.id == selectedPage }) lastHomePage = selectedPage
+    }
     var editing by rememberSaveable { mutableStateOf(false) }
     var homeMenu by remember { mutableStateOf(false) }
-    var settingsOpen by rememberSaveable { mutableStateOf(false) }
-    var widgetPicker by rememberSaveable { mutableStateOf(false) }
-    var pageManager by remember { mutableStateOf(false) }
-    var weatherPickerOpen by rememberSaveable { mutableStateOf(false) }
-    var wallpaperPickerOpen by rememberSaveable { mutableStateOf(false) }
-    var pagesFromSettings by remember { mutableStateOf(false) }
+    var navigation by rememberSaveable(stateSaver = listSaver<HomeNavigation, String>(
+        save = { listOf(it.surface.name, it.returnToSettings.toString(), it.replacementItemId.orEmpty()) },
+        restore = { HomeNavigation(HomeSurface.valueOf(it[0]), it[1].toBoolean(), it[2].ifEmpty { null }) },
+    )) { mutableStateOf(HomeNavigation()) }
+    val settingsOpen = navigation.showsSettings
+    val widgetPicker = navigation.surface == HomeSurface.WIDGETS
+    val pageManager = navigation.surface == HomeSurface.PAGES
+    val weatherPickerOpen = navigation.surface == HomeSurface.WEATHER
+    val wallpaperPickerOpen = navigation.surface == HomeSurface.WALLPAPER
     var quick by remember { mutableStateOf<QuickSelection?>(null) }
     var choosingStack by remember { mutableStateOf(false) }
     var folderId by rememberSaveable { mutableStateOf<String?>(null) }
     var resizingId by remember { mutableStateOf<String?>(null) }
-    var replaceTargetId by rememberSaveable { mutableStateOf<String?>(null) }
     var touching by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     var dockBounds by remember { mutableStateOf(Rect.Zero) }
@@ -112,38 +119,38 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
+    // System Home and Settings entry points clear the same transient interaction state.
+    fun resetTransientUi(destination: HomeSurface) {
+        focusManager.clearFocus(force = true)
+        keyboard?.hide()
+        drag.cancel()
+        drawerOpen = false
+        addingApps = false
+        addingToDock = false
+        editing = false
+        homeMenu = false
+        quick = null
+        choosingStack = false
+        folderId = null
+        resizingId = null
+        navigation = HomeNavigation(destination)
+    }
     val launchApp: (AppEntry) -> Unit = { app ->
         focusManager.clearFocus(force = true)
         keyboard?.hide()
-        if (app.info.componentName.packageName == context.packageName) {
-            drawerOpen = false
-            editing = false
-            homeMenu = false
-            widgetPicker = false
-            weatherPickerOpen = false
-            quick = null
-            choosingStack = false
-            folderId = null
-            pageManager = false
-            pagesFromSettings = false
-            resizingId = null
-            settingsOpen = true
-        } else {
-            model.launch(app)
-        }
+        if (app.info.componentName.packageName == context.packageName) resetTransientUi(HomeSurface.SETTINGS)
+        else model.launch(app)
     }
     var hoverTarget by remember { mutableStateOf<CellTarget?>(null) }
     val dockSlots = remember { mutableMapOf<String, Rect>() }
     val librarySlots = remember { mutableMapOf<String, Rect>() }
     val drawerState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
     val reduced = prefs.reducedMotion || !android.animation.ValueAnimator.areAnimatorsEnabled()
-    val fullPage = settingsOpen || widgetPicker || pageManager || weatherPickerOpen || wallpaperPickerOpen
+    val fullPage = navigation.fullPage
     val selectedHome = prefs.home.pages.firstOrNull { it.id == selectedPage } ?: prefs.home.pages.first()
     val homeNumber = prefs.home.pages.indexOf(selectedHome) + 1
     fun safeAnchor(bounds: Rect) = if (bounds.width > 0 && bounds.height > 0) bounds else Rect(16f, 32f, 72f, 88f)
     val closeQuick = { quick = null; choosingStack = false }
-    // A drag that started on a library tile (itemId null, no favorite role) reflows the grid live.
-    val libraryDrag = drag.session?.let { it.app != null && it.itemId == null && it.favorite == null } == true
     val itemMenu: (HomeItem) -> Unit = { item ->
         homeMenu = false; choosingStack = false
         quick = QuickSelection(safeAnchor(targets.itemBounds(item.id)), QuickOrigin.HOME, item.id, item.appId?.let(appById::get))
@@ -199,6 +206,22 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
             }
         }
     }
+    // Wait for actual movement so a stationary long press can still open app options.
+    val revealHomeForDrag = drag.session?.let {
+        it.trackedByRoot && (it.position - it.origin).getDistance() > drag.holdSlop
+    } == true
+    LaunchedEffect(revealHomeForDrag) {
+        if (revealHomeForDrag) {
+            focusManager.clearFocus(force = true)
+            keyboard?.hide()
+            query = ""
+            librarySearchRequest = 0
+            drawerOpen = false
+            if (selectedPage == PagerMap.LIBRARY_KEY) {
+                model.selectPage(LibraryDragNavigation.destination(prefs.home, lastHomePage))
+            }
+        }
+    }
     LaunchedEffect(fold.window, fold.rotation, homeRequest) { drag.cancel(); touching = false; closeQuick() }
     val edgeDirection = drag.session?.takeIf { (it.position - it.origin).getDistance() > drag.holdSlop }?.let { session ->
         val edge = with(density) { 24.dp.toPx() }
@@ -215,22 +238,13 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
         if (homeRequest > 0) {
             query = ""
             librarySearchRequest = 0
-            focusManager.clearFocus(force = true)
-            keyboard?.hide()
-            drawerOpen = false; editing = false; homeMenu = false; settingsOpen = false; widgetPicker = false
-            weatherPickerOpen = false
-            closeQuick(); folderId = null; pageManager = false; pagesFromSettings = false; resizingId = null
+            resetTransientUi(HomeSurface.HOME)
             model.selectPage(prefs.home.resolvedDefaultPageId())
         }
     }
     LaunchedEffect(showSettingsRequest) {
         if (showSettingsRequest > 0) {
-            focusManager.clearFocus(force = true)
-            keyboard?.hide()
-            drawerOpen = false; editing = false; homeMenu = false; widgetPicker = false
-            weatherPickerOpen = false
-            closeQuick(); folderId = null; pageManager = false; pagesFromSettings = false; resizingId = null
-            settingsOpen = true
+            resetTransientUi(HomeSurface.SETTINGS)
         }
     }
     // While dragging over the grid, compute the same reflow plan the drop will commit.
@@ -251,10 +265,7 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
         val target = hoverTarget
         if (draggedItem == null || target == null) prefs.home
         else {
-            val page = prefs.home.surface(target.pageId) ?: return@run prefs.home
-            val planned = HomeEditor.reflowed(page, draggedItem.copy(column = target.column, row = target.row))
-            if (planned == null) prefs.home
-            else HomeEditor.replacePage(prefs.home, planned)
+            HomeEditor.previewMove(prefs.home, draggedItem, target.pageId, target.column, target.row)
         }
     }
     val defaultPage = prefs.home.resolvedDefaultPageId()
@@ -296,8 +307,28 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
                 customActions = listOf(CustomAccessibilityAction("Home options", { openHomeMenu(selectedPage); true }))
                 onLongClick("Home options") { openHomeMenu(selectedPage); true }
             }).pointerInput(Unit) {
-                try { awaitPointerEventScope { while (true) touching = awaitPointerEvent(PointerEventPass.Initial).changes.any { it.pressed } } }
-                finally { touching = false }
+                try {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                        touching = true
+                        do {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            touching = event.changes.any { it.pressed }
+                            if (drag.session?.trackedByRoot == true) {
+                                val change = event.changes.firstOrNull { it.id == down.id }
+                                if (change == null || event.changes.count { it.pressed } > 1) drag.cancel()
+                                else {
+                                    drag.moveFromRoot(change.position)
+                                    change.consume()
+                                    if (!change.pressed) drag.finish()
+                                }
+                            }
+                        } while (touching)
+                    }
+                } finally {
+                    touching = false
+                    if (drag.session?.trackedByRoot == true) drag.cancel()
+                }
             }.pointerInput(fullPage, selectedPage, dockBounds, viewConfiguration, isModalDrawerOpen) {
                 if (fullPage || isModalDrawerOpen) return@pointerInput
                 awaitEachGesture {
@@ -336,10 +367,10 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
                                 if (selectedPage != PagerMap.HUB_KEY) {
                                     TextButton(onClick = { openDrawer(true) }) { Text("Add apps") }
                                 }
-                                TextButton(onClick = { widgetPicker = true }) { Text(if (selectedPage == PagerMap.HUB_KEY) "Add widget" else "Widgets") }
+                                TextButton(onClick = { navigation = navigation.open(HomeSurface.WIDGETS) }) { Text(if (selectedPage == PagerMap.HUB_KEY) "Add widget" else "Widgets") }
                                 if (selectedPage != PagerMap.HUB_KEY) {
                                     TextButton(onClick = { model.addFolder() }) { Text("Folder") }
-                                    TextButton(onClick = { pageManager = true }) { Text("Pages") }
+                                    TextButton(onClick = { navigation = navigation.open(HomeSurface.PAGES) }) { Text("Pages") }
                                 }
                                 if (selectedPage != defaultPage && selectedPage != PagerMap.HUB_KEY) {
                                     TextButton(onClick = { model.setDefaultPage(selectedPage) }) { Text("Set as home") }
@@ -380,7 +411,7 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
                                     Workspace(displayHome, selectedPage, fold, wide, status.timeMillis, appById, model.apps, drag, targets,
                                         widgets, editing, reduced, model::selectPage, openHomeMenu, itemMenu, launchApp,
                                         { folderId = it }, { model.addPage() }, { model.removeItem(it.id, widgets::delete) },
-                                        prefs.showHomeLabels, weather, { weatherPickerOpen = true }, prefs.alwaysShowPageDots,
+                                        prefs.showHomeLabels, weather, { navigation = navigation.open(HomeSurface.WEATHER) }, prefs.alwaysShowPageDots,
                                         allApps = apps,
                                         appsLoaded = loaded,
                                         categoryOverrides = prefs.categoryOverrides,
@@ -388,11 +419,11 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
                                             choosingStack = false
                                             quick = QuickSelection(safeAnchor(librarySlots[app.id] ?: Rect.Zero), QuickOrigin.LIBRARY, selectedHome.items.firstOrNull { it.appId == app.id }?.id, app)
                                         },
-                                        onSettings = { settingsOpen = true },
+                                        onSettings = { navigation = navigation.open(HomeSurface.SETTINGS) },
                                         onAppBounds = { id, bounds -> librarySlots[id] = bounds },
                                         contactMatches = contactMatches,
                                         onContact = ::openContact,
-                                        onHubAddWidgets = { model.selectPage(PagerMap.HUB_KEY); widgetPicker = true },
+                                        onHubAddWidgets = { model.selectPage(PagerMap.HUB_KEY); navigation = navigation.open(HomeSurface.WIDGETS) },
                                         weatherUnit = prefs.weatherUnit,
                                         homeRequest = homeRequest,
                                         libraryAz = prefs.libraryAz,
@@ -406,9 +437,9 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
                                         onLibrarySearchHandled = { request ->
                                             if (librarySearchRequest == request) librarySearchRequest = 0
                                         },
-                                        onAddPromptWidget = { item -> replaceTargetId = item.id; widgetPicker = true })
+                                        onAddPromptWidget = { item -> navigation = navigation.open(HomeSurface.WIDGETS, item.id) })
                                 }
-                                androidx.compose.animation.AnimatedVisibility(isModalDrawerOpen || libraryDrag,
+                                androidx.compose.animation.AnimatedVisibility(isModalDrawerOpen,
                                     enter = fadeIn(tween(if (reduced) 0 else 180)) + slideInVertically(tween(if (reduced) 0 else 260)) { it / 8 },
                                     exit = fadeOut(tween(if (reduced) 0 else 150))) {
                                     // Fade out on drag pickup so the grid is revealed; animating keeps the
@@ -422,7 +453,7 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
                                         { if (addingToDock) model.toggleFavorite(it) else model.toggleHomeApp(it) }, { drawerOpen = false }, launchApp,
                                         { app -> choosingStack = false; quick = QuickSelection(safeAnchor(librarySlots[app.id] ?: Rect.Zero), QuickOrigin.LIBRARY,
                                             selectedHome.items.firstOrNull { it.appId == app.id }?.id, app) },
-                                        { settingsOpen = true }, { id, bounds -> librarySlots[id] = bounds },
+                                        { navigation = navigation.open(HomeSurface.SETTINGS) }, { id, bounds -> librarySlots[id] = bounds },
                                         contactMatches, ::openContact,
                                         homeRequest = homeRequest)
                                     }
@@ -526,16 +557,16 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
             }
         }
         HomeOptionsDock(homeMenu, reduced, { homeMenu = false },
-            { homeMenu = false; widgetPicker = true }, { homeMenu = false; wallpaperPickerOpen = true }, { homeMenu = false; pageManager = true },
-            { homeMenu = false; editing = true }, { homeMenu = false; settingsOpen = true })
-        if (settingsOpen) LauncherSettings(prefs, fold, model, apps, { settingsOpen = false }, onDefaultHome, onSignalPermission,
-            onWallpaperSettings = { wallpaperPickerOpen = true },
-            onPages = { settingsOpen = false; pagesFromSettings = true; pageManager = true }, onContactsPermission = onContactsPermission,
+            { homeMenu = false; navigation = navigation.open(HomeSurface.WIDGETS) }, { homeMenu = false; navigation = navigation.open(HomeSurface.WALLPAPER) }, { homeMenu = false; navigation = navigation.open(HomeSurface.PAGES) },
+            { homeMenu = false; editing = true }, { homeMenu = false; navigation = navigation.open(HomeSurface.SETTINGS) })
+        if (settingsOpen) LauncherSettings(prefs, fold, model, apps, { navigation = navigation.dismiss() }, onDefaultHome, onSignalPermission,
+            onWallpaperSettings = { navigation = navigation.open(HomeSurface.WALLPAPER) },
+            onPages = { navigation = navigation.open(HomeSurface.PAGES) }, onContactsPermission = onContactsPermission,
             onNotificationAccess = onNotificationAccess)
         if (wallpaperPickerOpen) WallpaperPickerSheet(
-            onDismiss = { wallpaperPickerOpen = false },
+            onDismiss = { navigation = navigation.dismiss() },
             onOpenSystemSettings = {
-                wallpaperPickerOpen = false
+                navigation = navigation.dismiss()
                 onWallpaperSettings()
             }
         )
@@ -546,24 +577,22 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
             appRepository = model.apps,
             onLaunchApp = launchApp,
             onOpenLocationSettings = {
-                weatherPickerOpen = false
-                settingsOpen = true
+                navigation = HomeNavigation(HomeSurface.SETTINGS)
             },
             reduced = reduced,
-            onDismiss = { weatherPickerOpen = false }
+            onDismiss = { navigation = navigation.dismiss() }
         )
         if (widgetPicker) WidgetPickerScreen(widgets,
-            { widgetPicker = false; replaceTargetId = null },
+            { navigation = navigation.dismiss() },
             { provider ->
-                widgetPicker = false
-                val target = replaceTargetId?.let(prefs.home::item)?.takeIf { it.kind == HomeItemKind.WIDGET || it.kind == HomeItemKind.WIDGET_PROMPT }?.id
-                replaceTargetId = null
+                val target = navigation.replacementItemId?.let(prefs.home::item)?.takeIf { it.kind == HomeItemKind.WIDGET || it.kind == HomeItemKind.WIDGET_PROMPT }?.id
+                navigation = navigation.dismiss()
                 if (target != null) widgets.pickForReplace(provider.info, prefs.home.pageOf(target)?.id ?: selectedPage, target)
                 else widgets.pick(provider.info, selectedPage)
             })
         if (pageManager) PageManagerScreen(prefs.home, selectedPage, appById, model, reduced, {
-            pageManager = false; if (pagesFromSettings) settingsOpen = true; pagesFromSettings = false
-        }, { model.selectPage(it); pageManager = false; pagesFromSettings = false })
+            navigation = navigation.dismiss()
+        }, { model.selectPage(it); navigation = HomeNavigation() })
         val pageSnackbar = remember { SnackbarHostState() }
         val pageNotice by model.pageNotice.collectAsStateWithLifecycle()
         LaunchedEffect(pageNotice?.token, fullPage) {
@@ -646,8 +675,7 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
                                 else {
                                     if (target?.widgetProvider != null) model.messages.tryEmit(
                                         "That widget isn't installed. Choose a replacement.")
-                                    replaceTargetId = targetId
-                                    widgetPicker = true
+                                    navigation = navigation.open(HomeSurface.WIDGETS, targetId)
                                 }
                             }
                         })
@@ -666,7 +694,7 @@ fun HomeScreen(model: LauncherViewModel, fold: FoldState, status: DeviceStatus, 
                 if (app != null) add(QuickAction("Uninstall", Glyph.UNINSTALL, destructive = true) { closeQuick(); onUninstall(app) })
             }
             val configure: (() -> Unit)? = when {
-                item?.kind == HomeItemKind.WEATHER -> ({ closeQuick(); settingsOpen = true })
+                item?.kind == HomeItemKind.WEATHER -> ({ closeQuick(); navigation = navigation.open(HomeSurface.SETTINGS) })
                 item?.kind == HomeItemKind.FOLDER -> ({ closeQuick(); folderId = item.id })
                 item?.widgetId != null && widgets.canConfigure(item.widgetId) -> ({ closeQuick(); widgets.configureExisting(item.widgetId) })
                 else -> null

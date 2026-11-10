@@ -233,6 +233,9 @@ class LauncherViewModel(application: Application, private val savedState: SavedS
     fun renameFolder(id: String, title: String) = edit { layout ->
         HomeEdit(HomeEditor.folder(layout, id, title, layout.item(id)?.contents ?: emptyList()))
     }
+    fun sortFolderApps(id: String) = edit { layout ->
+        HomeEdit(HomeEditor.sortFolder(layout, id, apps.apps.value.associate { it.id to it.label }))
+    }
     fun toggleFolderApp(id: String, appId: String) = edit { layout ->
         val folder = layout.item(id)
         if (folder == null) HomeEdit(layout) else {

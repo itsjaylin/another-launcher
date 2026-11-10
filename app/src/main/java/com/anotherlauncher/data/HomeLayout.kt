@@ -86,25 +86,19 @@ object HomeEditor {
         val originPage = layout.pageOf(item.id)
         if (originPage?.id == pageId && item.column == column && item.row == row) return HomeEdit(layout, pageId)
         val positioned = item.copy(column = column, row = row)
-        val target = page.items.firstOrNull { it.id != item.id && it.intersects(positioned) }
-
-        // Dropping an app on an existing folder adds it to the folder's contents.
-        if (item.kind == HomeItemKind.APP && target != null &&
-            target.column == column && target.row == row && target.kind == HomeItemKind.FOLDER) {
-            val apps = target.contents + listOfNotNull(item.appId)
-            val folder = target.copy(contents = apps.distinct())
+        val target = folderDropTarget(page, positioned)
+        if (target != null) {
+            if (target.kind == HomeItemKind.APP && target.appId == item.appId) return HomeEdit(layout, pageId)
+            val folder = if (target.kind == HomeItemKind.FOLDER) {
+                target.copy(contents = (target.contents + item.appId!!).distinct())
+            } else {
+                HomeItem(kind = HomeItemKind.FOLDER, column = target.column, row = target.row,
+                    contents = listOf(target.appId!!, item.appId!!))
+            }
             val removed = remove(layout, item.id)
-            return HomeEdit(replaceItem(removed, folder), pageId)
-        }
-
-        // Dropping an app on another 1x1 app on the same page swaps their positions cleanly without grouping.
-        if (item.kind == HomeItemKind.APP && target != null &&
-            target.kind == HomeItemKind.APP && target.spanX == 1 && target.spanY == 1 &&
-            originPage?.id == pageId && item.spanX == 1 && item.spanY == 1) {
-            val swappedTarget = target.copy(column = item.column, row = item.row)
-            val swappedItem = item.copy(column = column, row = row)
-            val updatedItems = page.items.filterNot { it.id == item.id || it.id == target.id } + listOf(swappedItem, swappedTarget)
-            return HomeEdit(replacePage(layout, page.copy(items = updatedItems)), pageId)
+            val destination = removed.surface(pageId) ?: return HomeEdit(layout)
+            return HomeEdit(replacePage(removed, destination.copy(
+                items = destination.items.filterNot { it.id == target.id } + folder)), pageId)
         }
 
         if (!fits(page, positioned)) {
@@ -117,6 +111,30 @@ object HomeEditor {
         val removed = remove(layout, item.id)
         val destination = removed.surface(pageId) ?: return HomeEdit(layout)
         return HomeEdit(replacePage(removed, destination.copy(items = destination.items + positioned)), pageId)
+    }
+
+    /** Shared by hover and commit: an app/folder at this cell is a grouping target, not an obstacle. */
+    fun folderDropTarget(page: HomePage, positioned: HomeItem): HomeItem? {
+        if (page.id == HUB_PAGE_ID || positioned.kind != HomeItemKind.APP || positioned.appId == null ||
+            positioned.spanX != 1 || positioned.spanY != 1) return null
+        return page.items.firstOrNull { target ->
+            target.id != positioned.id && target.column == positioned.column && target.row == positioned.row &&
+                target.spanX == 1 && target.spanY == 1 &&
+                (target.kind == HomeItemKind.FOLDER || (target.kind == HomeItemKind.APP && target.appId != null))
+        }
+    }
+
+    /** Keep grouping targets under the pointer; only non-grouping collisions preview reflow. */
+    fun previewMove(layout: HomeLayout, requested: HomeItem, pageId: String, column: Int, row: Int): HomeLayout {
+        val page = layout.surface(pageId) ?: return layout
+        if (page.id == HUB_PAGE_ID && requested.kind != HomeItemKind.WIDGET) return layout
+        val item = if (requested.kind == HomeItemKind.APP && layout.item(requested.id) == null) {
+            page.items.firstOrNull { it.kind == HomeItemKind.APP && it.appId == requested.appId } ?: requested
+        } else requested
+        val positioned = item.copy(column = column, row = row)
+        if (folderDropTarget(page, positioned) != null) return layout
+        val planned = reflowed(page, positioned) ?: return layout
+        return replacePage(layout, planned)
     }
 
     /**
@@ -238,6 +256,23 @@ object HomeEditor {
     fun folder(layout: HomeLayout, id: String, title: String, contents: List<String>): HomeLayout {
         val item = layout.item(id)?.takeIf { it.kind == HomeItemKind.FOLDER } ?: return layout
         return replaceItem(layout, item.copy(title = title.trim().take(40).ifEmpty { "Folder" }, contents = contents.distinct()))
+    }
+
+    /** One-shot, locale-aware ordering. Unavailable apps keep their saved order at the end. */
+    fun sortFolder(layout: HomeLayout, id: String, labels: Map<String, String>, locale: java.util.Locale = java.util.Locale.getDefault()): HomeLayout {
+        val folder = layout.item(id)?.takeIf { it.kind == HomeItemKind.FOLDER } ?: return layout
+        val collator = java.text.Collator.getInstance(locale).apply { strength = java.text.Collator.PRIMARY }
+        val sorted = folder.contents.sortedWith { first, second ->
+            val a = labels[first]?.takeIf(String::isNotBlank)
+            val b = labels[second]?.takeIf(String::isNotBlank)
+            when {
+                a == null && b == null -> 0
+                a == null -> 1
+                b == null -> -1
+                else -> collator.compare(a, b)
+            }
+        }
+        return replaceItem(layout, folder.copy(contents = sorted))
     }
 
     fun stackCandidates(layout: HomeLayout, id: String): List<HomeItem> {

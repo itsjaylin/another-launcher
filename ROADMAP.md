@@ -6,9 +6,17 @@ A comprehensive roadmap and tracking document for **Another Launcher**, a modern
 
 **Target Platform:** Android 17 (API 37) | **Minimum:** Android 12 (API 31)
 
-**Test Suite:** 168 JVM unit tests; five streamlined-permission cases passed individually on the isolated QA install. Earlier device results are recorded in `docs/TESTING.md`. Android lint passes with zero errors.
+**Test Suite:** 219 JVM unit tests; five streamlined-permission cases passed individually on the isolated QA install. Earlier device results are recorded in `docs/TESTING.md`. Android lint passes with zero errors.
 
 ---
+
+## Local state-machine experiment
+
+- [x] Inventory stateful workflows and their ownership in [STATE_MACHINES.md](docs/STATE_MACHINES.md).
+- [x] Make foreground navigation and widget setup explicit; consume drag completion before callbacks.
+- [x] Add 25 regression tests for transition sequences, cancellation, identity and callback reentrancy.
+- [ ] Run the affected Home/Settings return paths, provider consent/configuration and recreation matrix on a device before accepting the experiment.
+- Keep remaining async-work risks documented; no wholesale rewrite of the tested layout or fold engines.
 
 ## 1. Project Vision & Core Principles
 
@@ -48,7 +56,7 @@ A comprehensive roadmap and tracking document for **Another Launcher**, a modern
 
 ### Milestone 5 — Smart Reflow, Local Categories & Global Search (`v0.5.0`)
 - [x] Predictive grid reflow during icon drag: nearby items slide to nearest free cells via Manhattan distance calculation.
-- [x] Instant drag-out from App Library (drawer becomes transparent while keeping drag session alive).
+- [x] Drag-out from inline App Library/search results hands the pointer stream to the home root, hides search/IME, and reveals the last valid home page without cancelling the drag.
 - [x] Ranked global search (apps, contacts opt-in via `READ_CONTACTS`, and Google Play fallback for unmatched App Library terms).
 - [x] App categorization engine with per-app user overrides in Settings.
 
@@ -127,11 +135,12 @@ A comprehensive roadmap and tracking document for **Another Launcher**, a modern
   - Converted the App Library from an opaque modal container drawer into the native last page of the horizontal pager, rendered directly over system wallpaper with liquid frosted glass cards.
     - Features dynamic Recent Apps tracking nestled in a frosted glass dropdown modal when tapping search, 2×2 category folder cards with expanding frosted sheets, a square "A-Z" button toggle seamlessly switching to a continuous alphabetical app grid (without redundant pill tab buttons), and instant drag-and-drop out of library.
   - Seamless bidirectional horizontal swipe gestures, system Back gesture return to default home, and dock/rail button toggle.
-- [x] **Single A–Z Add Apps Picker & Homescreen App Swapping:**
+- [x] **Single A–Z Add Apps Picker & Homescreen Grouping:**
   - Modernized "Add apps" modal into a single unified A–Z list/grid of all apps without category splits or category chips, with liquid frosted glass styling (`Modifier.glass(28, frosted = true)`), "+ Add" / "✓ Remove" badges, and instant search filtering.
-  - Effortless 1-to-1 app swapping on homescreen pages when moving an app over another app, eliminating unintended folder creation.
-  - Real-time live drag preview prioritizing the dragged item's vacated cell so displaced apps slide smoothly into place before releasing.
-  - Full-grid 24-slot app swapping support, with intentional folder creation dedicated to Edit mode and dropping onto existing folders.
+  - Drag an app onto another app to form a folder; app and folder targets stay stationary during hover.
+  - Non-grouping collisions retain live reflow previews and vacated-cell placement.
+  - Grouping also works on full 24-slot grids, across pages and from the library; existing folders accept additional apps.
+  - Tap an open group’s title to rename it; + opens app selection and A–Z persists locale-aware alphabetical order.
   - Instant outside-tap dismissal: touching empty rail areas (between the top-right status module and dock, or between the dock and bottom app button), empty space in the bottom dock bar, or the app library button immediately dismisses the Add Apps modal without forcing back button usage.
   - Bottom indicator row features the Hub search pill on left, home spread dots in center, and App Library pill on right (with 90° drop shadow).
 - [x] **Native System Wallpaper & Custom In-App Wallpaper Picker:**

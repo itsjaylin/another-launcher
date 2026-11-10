@@ -70,16 +70,15 @@ class WidgetController(
         view.spanX = spanX; view.spanY = spanY
         return FittingWidgetFrame(context, view).also { it.requirements = requirements(info) }
     }
-    var pendingId = savedState?.getInt("pending_widget", AppWidgetManager.INVALID_APPWIDGET_ID) ?: AppWidgetManager.INVALID_APPWIDGET_ID
-        private set
-    var pendingPageId = savedState?.getString("pending_widget_page") ?: "home"
-        private set
-    var pendingReplaceItemId: String? = savedState?.getString("pending_replace_item")
-        private set
-    private var existingConfiguration = savedState?.getInt("existing_widget_config", AppWidgetManager.INVALID_APPWIDGET_ID) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+    private val restoredLegacySetup = savedState != null && !savedState.containsKey("pending_widget_configuring")
+    private val setup = WidgetSetupFlow(restoreSetup(savedState))
+    private val pendingId: Int get() = setup.pending?.id ?: AppWidgetManager.INVALID_APPWIDGET_ID
     private val bindResult = activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK && manager.getAppWidgetInfo(pendingId) != null) configurePending()
-        else cancelPending()
+        // A late bind result must never finish an unrelated configuration transaction.
+        if (setup.state is WidgetSetupState.Binding) {
+            if (result.resultCode == Activity.RESULT_OK && manager.getAppWidgetInfo(pendingId) != null) configurePending()
+            else cancelPending()
+        }
     }
     init { activity.lifecycle.addObserver(this) }
 
@@ -103,23 +102,21 @@ class WidgetController(
     }
 
     fun pick(info: AppWidgetProviderInfo, pageId: String) {
-        if (pendingId != AppWidgetManager.INVALID_APPWIDGET_ID) return
+        if (!setup.idle) return
         if (!WidgetSizing.isHomeProvider(info.widgetCategory)) { onError("This provider is not a home-screen widget."); return }
-        pendingReplaceItemId = null
         beginBind(info, pageId)
     }
 
     /** Rebinds a dead tile in place; the ViewModel swaps the fresh id onto the existing item. */
     fun pickForReplace(info: AppWidgetProviderInfo, pageId: String, itemId: String) {
-        if (pendingId != AppWidgetManager.INVALID_APPWIDGET_ID) return
+        if (!setup.idle) return
         if (!WidgetSizing.isHomeProvider(info.widgetCategory)) { onError("This provider is not a home-screen widget."); return }
-        pendingReplaceItemId = itemId
-        beginBind(info, pageId)
+        beginBind(info, pageId, itemId)
     }
 
-    private fun beginBind(info: AppWidgetProviderInfo, pageId: String) {
-        pendingPageId = pageId
-        pendingId = host.allocateAppWidgetId()
+    private fun beginBind(info: AppWidgetProviderInfo, pageId: String, replaceItemId: String? = null) {
+        if (!setup.idle) return
+        setup.begin(PendingWidget(host.allocateAppWidgetId(), pageId, replaceItemId))
         try {
             val options = Bundle().apply { putInt(AppWidgetManager.OPTION_APPWIDGET_HOST_CATEGORY, AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN) }
             if (manager.bindAppWidgetIdIfAllowed(pendingId, info.profile, info.provider, options)) configurePending()
@@ -133,10 +130,12 @@ class WidgetController(
     }
 
     private fun configurePending() {
+        if (setup.state !is WidgetSetupState.Binding) return
         val info = manager.getAppWidgetInfo(pendingId)
         if (info == null) { cancelPending(); return }
         val optional = info.widgetFeatures and AppWidgetProviderInfo.WIDGET_FEATURE_CONFIGURATION_OPTIONAL != 0
         if (info.configure == null || optional) { finishPending(); return }
+        setup.configure()
         try { host.startAppWidgetConfigureActivityForResult(activity, pendingId, 0, CONFIGURE_REQUEST, null) }
         catch (_: ActivityNotFoundException) { cancelPending(); onError("The widget's setup screen is unavailable.") }
         catch (_: SecurityException) { cancelPending(); onError("The widget's setup screen couldn't be opened.") }
@@ -145,29 +144,41 @@ class WidgetController(
         it.configure != null && it.widgetFeatures and AppWidgetProviderInfo.WIDGET_FEATURE_RECONFIGURABLE != 0
     } == true
     fun configureExisting(id: Int) {
-        if (!canConfigure(id)) return
-        existingConfiguration = id
+        if (!setup.idle || !canConfigure(id)) return
+        setup.reconfigure(id)
         try { host.startAppWidgetConfigureActivityForResult(activity, id, 0, CONFIGURE_REQUEST, null) }
-        catch (_: RuntimeException) { existingConfiguration = AppWidgetManager.INVALID_APPWIDGET_ID; onError("Widget settings are unavailable.") }
+        catch (_: RuntimeException) { setup.cancel(); onError("Widget settings are unavailable.") }
     }
     fun configurationResult(result: Int) {
-        if (existingConfiguration != AppWidgetManager.INVALID_APPWIDGET_ID) existingConfiguration = AppWidgetManager.INVALID_APPWIDGET_ID
-        else if (result == Activity.RESULT_OK) finishPending() else cancelPending()
+        when (setup.state) {
+            is WidgetSetupState.Reconfiguring -> setup.finish()
+            is WidgetSetupState.Configuring -> if (result == Activity.RESULT_OK) finishPending() else cancelPending()
+            is WidgetSetupState.Binding -> {
+                // Compatibility with saved instances from before setup phases were recorded.
+                if (restoredLegacySetup && manager.getAppWidgetInfo(pendingId) != null) {
+                    if (result == Activity.RESULT_OK) finishPending() else cancelPending()
+                }
+            }
+            else -> Unit // Ignore results when no configuration was launched.
+        }
     }
     private fun finishPending() {
-        if (pendingId != AppWidgetManager.INVALID_APPWIDGET_ID) onAdded(pendingId, pendingPageId, pendingReplaceItemId)
-        pendingId = AppWidgetManager.INVALID_APPWIDGET_ID
-        pendingReplaceItemId = null
+        val widget = setup.pending ?: return
+        if (manager.getAppWidgetInfo(widget.id) == null) { cancelPending(); return }
+        setup.finish()
+        onAdded(widget.id, widget.pageId, widget.replaceItemId)
     }
     private fun cancelPending() {
-        if (pendingId != AppWidgetManager.INVALID_APPWIDGET_ID) host.deleteAppWidgetId(pendingId)
-        pendingId = AppWidgetManager.INVALID_APPWIDGET_ID
-        pendingReplaceItemId = null
+        setup.cancel()?.let { host.deleteAppWidgetId(it.id) }
     }
     fun save(bundle: Bundle) {
-        bundle.putInt("pending_widget", pendingId); bundle.putString("pending_widget_page", pendingPageId)
-        bundle.putString("pending_replace_item", pendingReplaceItemId)
-        bundle.putInt("existing_widget_config", existingConfiguration)
+        val pending = setup.pending
+        bundle.putInt("pending_widget", pending?.id ?: AppWidgetManager.INVALID_APPWIDGET_ID)
+        bundle.putString("pending_widget_page", pending?.pageId)
+        bundle.putString("pending_replace_item", pending?.replaceItemId)
+        bundle.putBoolean("pending_widget_configuring", setup.state is WidgetSetupState.Configuring)
+        bundle.putInt("existing_widget_config", (setup.state as? WidgetSetupState.Reconfiguring)?.id
+            ?: AppWidgetManager.INVALID_APPWIDGET_ID)
     }
     fun delete(id: Int) { displayedSizes.remove(id); host.deleteAppWidgetId(id) }
     override fun onStart(owner: LifecycleOwner) {
@@ -184,6 +195,22 @@ class WidgetController(
         }
     }
     companion object {
+        private fun restoreSetup(bundle: Bundle?): WidgetSetupState {
+            val existing = bundle?.getInt("existing_widget_config", AppWidgetManager.INVALID_APPWIDGET_ID)
+                ?: AppWidgetManager.INVALID_APPWIDGET_ID
+            val pending = bundle?.getInt("pending_widget", AppWidgetManager.INVALID_APPWIDGET_ID)
+                ?: AppWidgetManager.INVALID_APPWIDGET_ID
+            if (pending != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                val widget = PendingWidget(pending, bundle?.getString("pending_widget_page") ?: "home",
+                    bundle?.getString("pending_replace_item"))
+                // Older saved instances did not record the phase. A resolved provider means
+                // binding already succeeded; the controller resolves this legacy case below.
+                return if (bundle?.getBoolean("pending_widget_configuring") == true) WidgetSetupState.Configuring(widget)
+                else WidgetSetupState.Binding(widget)
+            }
+            return if (existing != AppWidgetManager.INVALID_APPWIDGET_ID) WidgetSetupState.Reconfiguring(existing)
+            else WidgetSetupState.Idle
+        }
         const val HOST_ID = 8128
         const val CONFIGURE_REQUEST = 8129
         private const val WIDGET_RESUME_DELAY_MS = 180L

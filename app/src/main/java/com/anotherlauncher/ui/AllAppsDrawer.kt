@@ -647,7 +647,8 @@ fun AllAppsDrawer(
                                         ),
                                         onWallpaper = isPage,
                                         reducedMotion = reducedMotion, membership = if (adding) app.id in pinned else null,
-                                        onBounds = { onAppBounds(app.id, it) }
+                                        onBounds = { onAppBounds(app.id, it) },
+                                        handoffDragToRoot = true,
                                     )
                                     }
                                     if (adding) Text(

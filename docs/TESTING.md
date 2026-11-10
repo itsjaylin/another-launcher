@@ -19,9 +19,48 @@ Outputs:
 - JVM test report: `app/build/reports/tests/testDebugUnitTest/index.html`
 - Android lint: `app/build/reports/lint-results-debug.html`
 
+## Local state-machine experiment
+
+Added 25 JVM regression tests (10 `HomeNavigationTest`, 11 `WidgetSetupFlowTest`, 4 `DragLifecycleTest`). The complete suite, including the folder-drop regression tests below, executes 219 tests with zero failures, errors or skips. Navigation tests cover Settings return paths, Home reset and replacement-target ownership; widget tests cover new/existing ownership, cancellation, busy phases and restored transaction state; drag tests cover cancel, duplicate/reentrant completion and callback failure.
+
+Debug and instrumentation APKs compile. Android lint has zero errors and 40 warnings. No instrumentation suite, physical-device fold checks or signed release build has been run for this experiment. Historical release/device results below refer to the earlier source and are not validation of these changes.
+
+Managed cloud validation uses the inherited proxy through the local Gradle helper and system Java CA trust:
+
+```sh
+JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts python3 /workspace/.cloud-setup/gradle.py :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest
+```
+
+Device checks before accepting:
+
+- Open each of Settings, Widgets, Pages, Weather and Wallpaper, then press system Home. Confirm all close and the default home page is selected, including when Wallpaper was opened from Settings.
+- Open Pages and Wallpaper from Settings; dismiss to Settings. Select a page from Pages to exit to Home. Rotate/recreate while each is open and verify its return path and replacement target.
+- Choose a widget, deny binding consent, cancel mandatory provider setup, then retry. Confirm one new ID is released and the saved layout is unchanged on cancellation. Repeat configuration for an existing widget; cancelling must keep that binding and layout.
+- Recreate the activity while consent/configuration is open. Verify the returned result completes the original transaction once. Try another setup action while busy; it must not overwrite the original target.
+- Replace an orphan/prompt widget, cancel, then open normal Add widget. Confirm it adds normally without inheriting the cancelled replacement target.
+- Exercise app/widget hold, drop, cancel, edge paging and rotation. Confirm no duplicate drop, provider click on release, or lost binding.
+
+## Folder-drop regression
+
+App-on-app drops now create folders, replacing the earlier swap policy. Hover keeps app/folder targets stationary so the target does not move away before release. Nine new `FolderDropTest` cases cover hover/commit behavior, cross-page and library grouping, existing folders, duplicate shortcuts, self-drops, widget reflow, Hub rejection and persistence; the two former swap tests now verify folder creation on ordinary and full grids.
+
+Device check: drag A over B and release, open the new folder and check both apps; add C to it, then repeat across pages and from the library/Dock. Verify normal empty-cell moves, widget reflow and cancellation still work. This interaction fix has JVM/build validation; its physical-device rerun remains outstanding.
+
+## Group title and organization controls
+
+Eight `FolderEditingTest` cases cover persistent label-based A–Z ordering, case-insensitive stable ties, Swedish collation, preservation of unavailable apps, idempotent/empty sorting, invalid targets, unchanged folder identity/geometry/widget bindings, and rename validation without losing membership or order. The complete JVM suite executes 219 tests.
+
+Device checks: open a group and tap its title; verify selection, keyboard focus and a 40-character limit. Save with keyboard Done and the check button, then reopen. Try a blank name (falls back to Folder), outside dismissal, and rotation while typing. Use + to select/deselect apps and check to return to the group; rename during selection, then tap app search and confirm the keyboard remains usable. Press A–Z and confirm the displayed order survives closing/reopening without altering membership. New additions append until A–Z is pressed again. Physical UI/IME checks remain to be run on the phone.
+
+## Library/search drag handoff
+
+Nine `LibraryDragTest` cases cover source removal/callback ownership, absolute root movement, exactly-once completion, cancellation, unchanged non-handoff gestures, stationary long presses and last/default/deleted-page destination rules. The complete suite executes 219 tests. These are policy/lifecycle tests; pointer dispatch and IME timing still need device input.
+
+Device check: open Library, search for an app, hold and move it. Confirm search/IME disappear, the last home page appears, and the follower stays attached to the same finger until release. Drop on an empty cell, another app, an existing folder and the Dock. Repeat edge paging, Add apps picker, A–Z browsing, stationary long press, cancellation, multi-touch, rotation and system Home. Also confirm original home/dock/widget drags work. No placement should be committed on cancellation. Category-folder dialogs use their existing separate-window path and are outside this inline search-result handoff.
+
 ## Automated coverage
 
-168 JVM tests cover:
+219 JVM tests cover:
 
 - first-run default layout generation with dual 2×2 top widget prompt tiles and Row 2 app flow, selective in-place prompt replacement for square widgets while retaining sibling prompts, wide 4×2 widget replacement clearing sibling prompt slots, and codec round-trip validation;
 - device status telemetry defaults, copy integrity, cellular network formatting, and multi-cell signal strength level extraction;
@@ -30,7 +69,7 @@ Outputs:
 - multi-tier smart app categorization (`LibraryCategory.of`, `AppCategory.classify`) using Android platform categories, game flags, publisher/package signatures, and semantic keyword matching on label/package tokens to minimize "Other", with collision disambiguation (Perplexity, Uber Eats, Kindle, Prime Video), user override persistence, and in-settings refresh/reset;
 
 - the exact dock-position matrix, handedness, rotation and split-screen classification;
-- auto-reflow and app swapping on drop: dropping a 1×1 app on another 1×1 app on the same page swaps positions cleanly without grouping into a folder; full-page (24 apps) app swapping works seamlessly; occupied-cell placements from outside slide intersecting neighbors to the nearest free cells on the same page, preserve every item id, and give up with an error instead of overwriting;
+- app-on-app folder creation on ordinary/full grids, same-page/cross-page/library drops, existing-folder deduplication, duplicate-shortcut no-op, stationary grouping previews, persistence round trips, preserved widget bindings, and non-grouping reflow;
 - off-center zero-thickness hinges on both axes;
 - invalid/missing angle samples and recovery from CLOSED posture;
 - no startup animation when WindowManager delivers its first feature;
@@ -157,9 +196,9 @@ Record any visible black interval during physical panel switching separately fro
 
 Before release, reset `dumpsys gfxinfo com.anotherlauncher`, perform repeated Hub/Home/Library swipes and return Home from another app, then inspect deadline misses separately from cold composition. Verify widgets retain their IDs, remain visible during the brief listener deferral, and refresh normally after resume.
 
-### Current validation status
+### Historical validation before the state-machine experiment
 
-Current source passes 168 JVM tests and builds debug, instrumentation and signed release bundle artifacts. Lint has zero errors and 40 reviewed warnings: UseKtx (11), ConfigurationScreenWidthHeight (6), ObsoleteSdkInt (6), IconLauncherShape (5), IconDuplicates (5), ModifierParameter (3), and one each for RedundantLabel, AndroidGradlePluginVersion, Wakelock and IconLocation. The timed wake-lock/fold handoff is retained; no warning suppressions were added. Earlier beta.3 hardware checks are historical, not current proof. Comprehensive provider variants, physical handoff timing and frame-time targets still require the manual checks above.
+The source before this experiment passed 168 JVM tests and builds debug, instrumentation and signed release bundle artifacts. Lint has zero errors and 40 reviewed warnings: UseKtx (11), ConfigurationScreenWidthHeight (6), ObsoleteSdkInt (6), IconLauncherShape (5), IconDuplicates (5), ModifierParameter (3), and one each for RedundantLabel, AndroidGradlePluginVersion, Wakelock and IconLocation. The timed wake-lock/fold handoff is retained; no warning suppressions were added. Earlier beta.3 hardware checks are historical, not current proof. Comprehensive provider variants, physical handoff timing and frame-time targets still require the manual checks above.
 
 Glass contrast manual check: inspect Hub weather, Add Widget, Library results, Library search, A-Z toggle, Recent apps, and folder sheets in both themes over bright and dark wallpapers. Verify text, placeholders, icons, and selected states remain readable.
 
